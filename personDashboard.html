@@ -1,0 +1,2452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+    <title>CRM Dashboard - American Hairline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        /* Left Navigation */
+        .sidebar {
+            width: 220px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            height: 100%;
+            overflow-y: auto;
+            transition: width 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar.collapsed {
+            width: 60px;
+            transition: width 0.3s;
+        }
+
+        .sidebar.collapsed .sidebar-header h2,
+        .sidebar.collapsed .nav-links a {
+            display: none;
+        }
+
+        .sidebar-header {
+            padding: 0 15px 20px;
+            border-bottom: 1px solid #34495e;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar-header i {
+            margin-right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .nav-links {
+            padding: 15px;
+        }
+
+        .nav-links a {
+            display: block;
+            color: #ecf0f1;
+            text-decoration: none;
+            padding: 8px 0;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: #3498db;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .hide {
+            display: none !important;
+        }
+
+        /* Professional Compact Filter Bar - FIXED */
+        .professional-filter-bar {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-bottom: 2px solid #e9ecef;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .filter-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            min-height: 45px;
+        }
+
+        .dashboard-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2c3e50;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            line-height: 1.2;
+            min-width: 120px;
+            max-width: 160px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .filters-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .filter-compact {
+            display: flex;
+            flex-direction: column;
+            min-width: 100px;
+        }
+
+        .filter-compact label {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 2px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .filter-compact select,
+        .filter-compact input {
+            padding: 5px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            background: white;
+            transition: all 0.2s ease;
+            height: 28px;
+        }
+
+        .filter-compact select:focus,
+        .filter-compact input:focus {
+            outline: none;
+            border-color: #4a69bd;
+            box-shadow: 0 0 0 2px rgba(74, 105, 189, 0.1);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+            min-width: 120px;
+            align-items: center;
+        }
+
+        .btn-compact {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            height: 32px;
+            flex: 1;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-apply-compact {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: 2px solid #007bff;
+        }
+
+        .btn-apply-compact:hover {
+            background: linear-gradient(135deg, #0056b3, #004085);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+        }
+
+        .btn-refresh-compact {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+            color: white;
+            border: 2px solid #28a745;
+        }
+
+        .btn-refresh-compact:hover {
+            background: linear-gradient(135deg, #1e7e34, #155724);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+
+        /* Professional Profile Section */
+        .profile-section-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-shrink: 0;
+        }
+
+        .profile-card-compact {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .profile-avatar {
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(135deg, #4a69bd, #3b5998);
+            border-radius: 5px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-info-compact {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-name-compact {
+            font-size: 12px;
+            font-weight: 700;
+            color: #2c3e50;
+            line-height: 1.2;
+        }
+
+        .profile-role-compact {
+            font-size: 9px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .metrics-compact {
+            display: flex;
+            gap: 12px;
+        }
+
+        .metric-compact {
+            text-align: center;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            border: 2px solid #e9ecef;
+            min-width: 85px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .metric-compact:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.12);
+        }
+
+        .metric-label-compact {
+            font-size: 9px;
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 3px;
+            line-height: 1.2;
+        }
+
+        .metric-value-compact {
+            font-size: 16px;
+            font-weight: 800;
+            color: #2c3e50;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-value-compact.positive { color: #2ecc71; }
+        .metric-value-compact.negative { color: #e74c3c; }
+        .metric-value-compact.neutral { color: #f39c12; }
+
+        /* Dashboard Content */
+        .dashboard-content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            background: transparent;
+        }
+
+        /* Main Section: Professional Funnel + Right Metrics */
+        .main-dashboard-section {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 25px;
+            margin-bottom: 35px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        /* Professional Centered Funnel Design */
+        .professional-funnel {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            position: relative;
+        }
+
+        .funnel-header-pro {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f1f3f4;
+        }
+
+        .funnel-title-pro {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0;
+        }
+
+        /* Funnel Layout: 80% for stages, 20% for conversion boxes */
+        .funnel-layout {
+            display: flex;
+            width: 100%;
+            gap: 0;
+        }
+
+        .funnel-container-pro {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 80%;
+            position: relative;
+        }
+
+        .conversion-section {
+            width: 20%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            position: relative;
+            padding: 20px 0;
+        }
+
+        /* Funnel Stage Row - Centered */
+        .funnel-stage-row {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Stage Label - External (for small bars only) */
+        .stage-label-external {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(85, 85, 85, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+            margin-bottom: 8px;
+            display: none; /* Hidden by default, shown via JS for small bars */
+        }
+
+        .stage-label-external.show {
+            display: block;
+        }
+
+        /* Dynamic Centered Stage Bar */
+        .funnel-stage-dynamic {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px 25px;
+            border-radius: 10px;
+            color: #2c3e50;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            animation: slideInScale 0.6s ease-out;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            min-width: 10px;
+            height: 60px;
+            margin: 0 auto;
+        }
+
+        .funnel-stage-dynamic:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Stage Content Container */
+        .stage-content-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            width: 100%;
+        }
+
+        /* Stage Label Inside (for large bars) */
+        .stage-label-internal {
+            font-size: 11px;
+            font-weight: 600;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: none; /* Hidden by default, shown via JS for large bars */
+        }
+
+        .stage-label-internal.show {
+            display: block;
+        }
+
+        /* Dynamic Width Classes */
+        .funnel-stage-dynamic.stage-new-leads {
+            background: linear-gradient(135deg, #45abff 0%, #008cff 100%);
+            border: 2px solid #2196f3;
+            animation-delay: 0.1s;
+        }
+
+        .funnel-stage-dynamic.stage-connected {
+            background: linear-gradient(135deg, #e96bff 0%, #9c27b0 100%);
+            border: 2px solid #9c27b0;
+            animation-delay: 0.2s;
+        }
+
+        .funnel-stage-dynamic.stage-booked {
+            background: linear-gradient(135deg, #ffb546 0%, #ff9900 100%);
+            border: 2px solid #ff9800;
+            animation-delay: 0.3s;
+        }
+
+        .funnel-stage-dynamic.stage-visited {
+            background: linear-gradient(135deg, #5dce61 0%, #4caf50 100%);
+            border: 2px solid #4caf50;
+            animation-delay: 0.4s;
+        }
+
+        .funnel-stage-dynamic .stage-count-dynamic {
+            color: #ffffff !important;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important; 
+        }
+        
+        .funnel-stage-dynamic .stage-label-internal {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        /* Stage Number - Prominent inside the bar */
+        .stage-count-dynamic {
+            font-size: 36px;
+            font-weight: 800;
+            color: #2c3e50;
+            line-height: 1;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        /* Conversion Boxes - In dedicated 20% section */
+        .conversion-box-dedicated {
+            color: white;
+            padding: 5px 14px;
+            border-radius: 8px;
+            border: 2px solid #2196f3;
+            font-size: 29px;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.25);
+            text-align: center;
+            transition: all 0.3s ease;
+            min-width: 60px;
+            margin: 15px 0;
+        }
+
+        .conversion-box-dedicated:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 18px rgba(33, 150, 243, 0.4);
+        }
+
+        /* Different gradient colors matching funnel stages */
+        .conversion-box-dedicated.conv-1 {
+            border-color: #2196f3;
+            background: linear-gradient(180deg, #008cff 65%, #9c27b0 90%);
+        }
+
+        .conversion-box-dedicated.conv-2 {
+            border-color: #9c27b0;
+            background: linear-gradient(180deg, #9c27b0 65%, #ff9900 90%);
+        }
+
+        .conversion-box-dedicated.conv-3 {
+            border-color: #ff9800;
+            background: linear-gradient(180deg, #ff9900 65%, #4caf50 90%);
+        }
+
+        /* Right Side Professional Metrics */
+        .right-metrics-pro {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .metric-card-pro {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            animation: slideInRight 0.6s ease-out;
+            text-align: center;
+        }
+
+        .metric-card-pro:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .metric-card-pro::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--card-accent);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card-pro:hover::before {
+            transform: scaleX(1);
+        }
+
+        /* Professional Size Hierarchy */
+        .metric-card-pro:nth-child(1) {
+            --card-accent: linear-gradient(135deg, #9b59b6, #8e44ad);
+            animation-delay: 0.1s;
+        }
+
+        .metric-card-pro:nth-child(2) {
+            --card-accent: linear-gradient(135deg, #3498db, #2980b9);
+            transform: scale(0.95);
+            animation-delay: 0.2s;
+        }
+
+        .metric-card-pro:nth-child(3) {
+            --card-accent: linear-gradient(135deg, #e74c3c, #c0392b);
+            transform: scale(0.9);
+            animation-delay: 0.3s;
+        }
+
+        .metric-card-pro:nth-child(4) {
+            --card-accent: linear-gradient(135deg, #34495e, #2c3e50);
+            transform: scale(0.85);
+            animation-delay: 0.4s;
+        }
+
+        .metric-card-pro:hover:nth-child(2) { transform: scale(0.95) translateY(-5px); }
+        .metric-card-pro:hover:nth-child(3) { transform: scale(0.9) translateY(-5px); }
+        .metric-card-pro:hover:nth-child(4) { transform: scale(0.85) translateY(-5px); }
+
+        .metric-info-pro h3 {
+            font-size: 12px;
+            color: #7f8c8d;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+
+        .metric-value-pro {
+            font-size: 40px;
+            font-weight: 800;
+            color: #2c3e50;
+            line-height: 1;
+            animation: countUp 0.8s ease-out;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive sizing for hierarchy */
+        .metric-card-pro:nth-child(2) .metric-value-pro { font-size: 36px; }
+        .metric-card-pro:nth-child(3) .metric-value-pro { font-size: 32px; }
+        .metric-card-pro:nth-child(4) .metric-value-pro { font-size: 28px; }
+
+        /* City Funnels Section */
+        .city-funnels-section {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 35px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        /* City Funnel - Compact version without conversion boxes */
+        .city-funnel {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            position: relative;
+        }
+
+        .city-funnel-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f1f3f4;
+        }
+
+        .city-funnel-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0;
+        }
+
+        /* City Funnel Container - No conversion section */
+        .city-funnel-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            position: relative;
+        }
+
+        /* City Stage Row */
+        .city-funnel-stage-row {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            position: relative;
+        }
+
+        /* City Stage Bar - Compact */
+        .city-funnel-stage {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: #2c3e50;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            animation: slideInScale 0.6s ease-out;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+            min-width: 10px;
+            height: 45px;
+            margin: 0 auto;
+        }
+
+        .city-funnel-stage:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        /* City Stage Content */
+        .city-stage-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        /* City Stage Labels */
+        .city-stage-label-external {
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(85, 85, 85, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            text-align: center;
+            margin-bottom: 6px;
+            display: none;
+        }
+
+        .city-stage-label-external.show {
+            display: block;
+        }
+
+        .city-stage-label-internal {
+            font-size: 11px;
+            font-weight: 600;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            display: none;
+        }
+
+        .city-stage-label-internal.show {
+            display: block;
+        }
+
+        /* City Stage Number */
+        .city-stage-count {
+            font-size: 30px;
+            font-weight: 800;
+            color: #2c3e50;
+            line-height: 1;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        /* City-specific stage colors */
+        .city-funnel-stage.city-total-leads {
+            background: linear-gradient(135deg, #45abff 0%, #008cff 100%);
+            border: 2px solid #2196f3;
+        }
+
+        .city-funnel-stage.city-booked {
+            background: linear-gradient(135deg, #ffb546 0%, #ff9900 100%);
+            border: 2px solid #ff9800;
+        }
+
+        .city-funnel-stage.city-visited {
+            background: linear-gradient(135deg, #5dce61 0%, #4caf50 100%);
+            border: 2px solid #4caf50;
+        }
+
+        .city-funnel-stage .city-stage-count {
+            color: #ffffff !important;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important; 
+        }
+        
+        .city-funnel-stage .city-stage-label-internal {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        /* Charts Section - Now contains Pie Chart and MIS side by side */
+        .charts-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        /* Pie Chart Container */
+        .pie-chart-container {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border: 1px solid rgba(0,0,0,0.08);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            animation: fadeInLeft 0.6s ease-out;
+        }
+
+        .pie-chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.05) 100%);
+            pointer-events: none;
+            border-radius: 15px;
+        }
+
+        .pie-chart-container canvas {
+            background: radial-gradient(circle at center, #ffffff 0%, #f8f9fa 100%);
+            position: relative;
+            z-index: 1;
+        }
+
+        .chart-header {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            color: white;
+            margin: -25px -25px 25px -25px;
+            padding: 25px;
+            border-radius: 15px 15px 0 0;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            pointer-events: none;
+        }
+
+        .chart-title {
+            top:10px;
+            left:10px;
+            color: white !important;
+            font-size: 19px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            margin: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .chart-period {
+            background: rgba(255,255,255,0.25);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+        }
+
+        #pieChart {
+            height: 400px !important;
+            max-height: 400px !important;
+            width: 100% !important;
+        }
+
+        .pie-chart-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        /* MIS Section - Now in charts section */
+        .mis-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            animation: fadeInRight 0.6s ease-out;
+        }
+
+        .mis-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .mis-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .mis-subtitle {
+            color: #7f8c8d;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .mis-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .mis-table thead {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            color: white;
+        }
+
+        .mis-table th,
+        .mis-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .mis-table th {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mis-table tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        .mis-table tbody tr:hover {
+            background-color: #f8f9fa;
+            transform: scale(1.01);
+        }
+
+        .mis-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .metric-name {
+            text-align: left !important;
+            font-weight: 600;
+            color: #2c3e50;
+            background: #f8f9fa;
+            font-size: 18px;
+        }
+
+        .planned-value {
+            font-weight: 600;
+            color: #566e86;
+            font-size: 23px;
+        }
+
+        .actual-value {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 25px;
+        }
+
+        .score-value {
+            font-weight: 700;
+            font-size: 25px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            color: white;
+        }
+
+        .score-positive {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+
+        .score-negative {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .score-neutral {
+            background: linear-gradient(135deg, #fad046, #e0b936);
+        }
+
+        /* Loading Spinner */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: all 0.3s ease;
+        }
+
+        .spinner-container {
+            text-align: center;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .spinner-bars {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            margin: 0 auto 20px;
+        }
+
+        .bar {
+            width: 6px;
+            height: 30px;
+            background: #3498db;
+            border-radius: 3px;
+            animation: stretchdelay 1.2s infinite ease-in-out;
+        }
+
+        .bar:nth-child(1) { animation-delay: -1.1s; }
+        .bar:nth-child(2) { animation-delay: -1.0s; }
+        .bar:nth-child(3) { animation-delay: -0.9s; }
+        .bar:nth-child(4) { animation-delay: -0.8s; }
+        .bar:nth-child(5) { animation-delay: -0.7s; }
+
+        .loading-text {
+            color: #555;
+            font-size: 16px;
+            font-weight: 500;
+            animation: textFade 2s ease-in-out infinite;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInScale {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes countUp {
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes stretchdelay {
+            0%, 40%, 100% {
+                transform: scaleY(0.4);
+            }
+            20% {
+                transform: scaleY(1);
+            }
+        }
+
+        @keyframes textFade {
+            0%, 100% {
+                opacity: 0.7;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1400px) {
+            .main-dashboard-section {
+                gap: 20px;
+            }
+            
+            .city-funnels-section {
+                gap: 15px;
+            }
+            
+            .filters-left {
+                gap: 10px;
+            }
+            
+            .profile-section-right {
+                gap: 12px;
+            }
+            
+            .metric-compact {
+                min-width: 75px;
+                padding: 6px 10px;
+            }
+            
+            .conversion-box-dedicated {
+                padding: 10px 14px;
+                font-size: 18px;
+            }
+            
+            .stage-count-dynamic {
+                font-size: 32px;
+            }
+
+            .city-stage-count {
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .filter-row {
+                gap: 10px;
+            }
+            
+            .filters-left {
+                gap: 8px;
+            }
+            
+            .filter-compact {
+                min-width: 90px;
+            }
+            
+            .metric-compact {
+                min-width: 70px;
+                padding: 6px 8px;
+            }
+            
+            .metric-value-compact {
+                font-size: 14px;
+            }
+            
+            .conversion-box-dedicated {
+                padding: 8px 12px;
+                font-size: 16px;
+            }
+            
+            .stage-count-dynamic {
+                font-size: 30px;
+            }
+
+            .city-stage-count {
+                font-size: 18px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .main-dashboard-section {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+            
+            .city-funnels-section {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+            
+            .charts-section {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+            
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+                min-height: auto;
+            }
+            
+            .dashboard-title {
+                text-align: center;
+                font-size: 16px;
+                min-width: auto;
+                max-width: none;
+            }
+            
+            .filters-left {
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+            
+            .profile-section-right {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .funnel-layout {
+                flex-direction: column;
+            }
+            
+            .funnel-container-pro {
+                width: 100%;
+            }
+            
+            .conversion-section {
+                width: 100%;
+                flex-direction: row;
+                justify-content: center;
+                gap: 15px;
+                padding: 15px 0;
+            }
+            
+            .conversion-box-dedicated {
+                margin: 0;
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+            
+            .stage-count-dynamic {
+                font-size: 28px;
+            }
+
+            .city-stage-count {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+            }
+            
+            .dashboard-content {
+                padding: 20px;
+            }
+            
+            .professional-filter-bar {
+                padding: 10px 15px;
+            }
+            
+            .dashboard-title {
+                font-size: 14px;
+                text-align: center;
+            }
+            
+            .filters-left {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            
+            .filter-compact {
+                min-width: auto;
+            }
+            
+            .filter-actions {
+                gap: 8px;
+                min-width: auto;
+            }
+            
+            .profile-section-right {
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .metrics-compact {
+                flex-direction: row;
+                gap: 12px;
+                justify-content: center;
+            }
+            
+            .metric-compact {
+                min-width: 70px;
+                padding: 6px 10px;
+            }
+            
+            .metric-value-compact {
+                font-size: 14px;
+            }
+            
+            .stage-count-dynamic {
+                font-size: 26px;
+            }
+            
+            .metric-value-pro {
+                font-size: 36px;
+            }
+            
+            .metric-card-pro:nth-child(2) .metric-value-pro { font-size: 32px; }
+            .metric-card-pro:nth-child(3) .metric-value-pro { font-size: 28px; }
+            .metric-card-pro:nth-child(4) .metric-value-pro { font-size: 24px; }
+            
+            .city-funnels-section {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .conversion-section {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .conversion-box-dedicated {
+                padding: 6px 10px;
+                font-size: 13px;
+            }
+
+            .city-stage-count {
+                font-size: 14px;
+            }
+
+            #pieChart {
+                height: 300px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .professional-filter-bar {
+                padding: 8px 10px;
+            }
+            
+            .dashboard-title {
+                font-size: 12px;
+                line-height: 1.3;
+            }
+            
+            .profile-avatar {
+                width: 30px;
+                height: 30px;
+                font-size: 10px;
+            }
+            
+            .profile-name-compact {
+                font-size: 11px;
+            }
+            
+            .metrics-compact {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .metric-compact {
+                min-width: auto;
+                padding: 6px 8px;
+            }
+            
+            .metric-value-compact {
+                font-size: 12px;
+            }
+            
+            .metric-label-compact {
+                font-size: 8px;
+            }
+            
+            .stage-count-dynamic {
+                font-size: 24px;
+            }
+            
+            .metric-value-pro {
+                font-size: 32px;
+            }
+            
+            .metric-card-pro:nth-child(2) .metric-value-pro { font-size: 28px; }
+            .metric-card-pro:nth-child(3) .metric-value-pro { font-size: 24px; }
+            .metric-card-pro:nth-child(4) .metric-value-pro { font-size: 20px; }
+            
+            .mis-table th,
+            .mis-table td {
+                padding: 8px 6px;
+                font-size: 10px;
+            }
+            
+            .conversion-box-dedicated {
+                padding: 5px 8px;
+                font-size: 12px;
+            }
+
+            .city-stage-count {
+                font-size: 12px;
+            }
+
+            .city-funnel-title {
+                font-size: 14px;
+            }
+
+            #pieChart {
+                height: 250px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<script>
+  window.CRM_USE_API_PROXY = "<?= CRM_USE_API_PROXY ?>";
+  window.CRM_WEB_APP_BASE = "<?= CRM_WEB_APP_BASE ?>";
+</script>
+<?!= HtmlService.createHtmlOutputFromFile("apiClient").getContent() ?>
+
+    <!-- Spinner Overlay -->
+    <div class="spinner-overlay" id="spinnerOverlay">
+        <div class="spinner-container">
+            <!-- Bars Spinner -->
+            <div class="spinner-bars">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+            
+            <div class="loading-text">Loading...</div>
+        </div>
+    </div>
+
+    <!-- Left Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <i class="sidebar-toggle">≡</i>
+            <h2>CRM</h2>
+        </div>
+        <div class="nav-links">
+            <a href="#" class="active">Dashboard</a>
+            <a href="#" class="allLeads">All Leads</a>
+            <a href="#" class="uploadLead">Upload Lead</a>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <!-- Professional Compact Filter Bar -->
+        <div class="professional-filter-bar">
+            <div class="filter-row">
+                <div class="dashboard-title">
+                    CRM Dashboard
+                </div>
+                
+                <div class="filters-left">
+                    <div class="filter-compact hide">
+                        <label for="startDate">Start Date</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <div class="filter-compact hide">
+                        <label for="endDate">End Date</label>
+                        <input type="date" id="endDate">
+                    </div>
+                    <div class="filter-compact">
+                        <label for="period">Date</label>
+                        <select id="period">
+                            <option value="Current Week">Current Week</option>
+                            <option value="Last Week">Last Week</option>
+                            <option value="Today">Today</option>
+                            <option value="Yesterday">Yesterday</option>
+                            <option value="Current Month">Current Month</option>
+                            <option value="Last Month">Last Month</option>
+                            <option value="Custom">Custom</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-compact">
+                        <label for="cityFilter">City</label>
+                        <select id="cityFilter">
+                            <option value="">All Cities</option>
+                            <option value="Mumbai">Mumbai</option>
+                            <option value="Delhi">Delhi</option>
+                            <option value="Bangalore">Bangalore</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+                    <div class="filter-compact">
+                        <label for="platformFilter">Platform</label>
+                        <select id="platformFilter">
+                            <option value="">All Platforms</option>
+                            <option value="Gallabox">Gallabox</option>
+                            <option value="Website">Website</option>
+                            <option value="Social Media">Social Media</option>
+                            <option value="Flexi Funnel">Flexi Funnel</option>
+                            <option value="Whatsapp Ads">Whatsapp Ads</option>
+                            <option value="Miscall">Miscall</option>
+                            <option value="Incoming">Incoming</option>
+                        </select>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="btn-compact btn-apply-compact" id="applyFilters">Apply</button>
+                        <button class="btn-compact btn-refresh-compact" id="resetFilter">Reset</button>
+                    </div>
+                </div>
+                
+                <div class="profile-section-right">
+                    <div class="profile-card-compact">
+                        <div class="profile-avatar" id="headerProfileIcon">👤</div>
+                        <div class="profile-info-compact">
+                            <div class="profile-name-compact" id="headerProfileName">All</div>
+                            <div class="profile-role-compact" id="headerProfileDesignation">CRM Executive</div>
+                        </div>
+                    </div>
+                    
+                    <div class="metrics-compact">
+                        <div class="metric-compact">
+                            <div class="metric-label-compact">Last Week Mis Score</div>
+                            <div class="metric-value-compact" id="headerMisScoring">NaN</div>
+                        </div>
+                        <div class="metric-compact">
+                            <div class="metric-label-compact">Current Week Conversion Ratio</div>
+                            <div class="metric-value-compact" id="headerConversionRatio">68%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Main Dashboard Section: Professional Funnel + Right Metrics -->
+            <div class="main-dashboard-section">
+                <!-- Professional Sales Funnel -->
+                <div class="professional-funnel">
+                    <div class="funnel-header-pro">
+                        <h3 class="funnel-title-pro">Sales Funnel</h3>
+                    </div>
+                    <div class="funnel-layout">
+                        <!-- Funnel Stages Container - 80% width -->
+                        <div class="funnel-container-pro">
+                            <!-- New Leads Stage -->
+                            <div class="funnel-stage-row">
+                                <div class="stage-label-external" id="newLeadsExternal">No of Leads</div>
+                                <div class="funnel-stage-dynamic stage-new-leads" id="newLeadsBar" style="width: 100%;">
+                                    <div class="stage-content-container">
+                                        <div class="stage-label-internal" id="newLeadsInternal">New Leads</div>
+                                        <div class="stage-count-dynamic" id="funnelNewLeads">100</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Connected Stage -->
+                            <div class="funnel-stage-row">
+                                <div class="stage-label-external" id="connectedExternal">Connected</div>
+                                <div class="funnel-stage-dynamic stage-connected" id="connectedBar" style="width: 80%;">
+                                    <div class="stage-content-container">
+                                        <div class="stage-label-internal" id="connectedInternal">Connected</div>
+                                        <div class="stage-count-dynamic" id="funnelContacted">50</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Consultation Booked Stage -->
+                            <div class="funnel-stage-row">
+                                <div class="stage-label-external" id="bookedExternal">Consultation Booked</div>
+                                <div class="funnel-stage-dynamic stage-booked" id="bookedBar" style="width: 19%;">
+                                    <div class="stage-content-container">
+                                        <div class="stage-label-internal" id="bookedInternal">Consultation Booked</div>
+                                        <div class="stage-count-dynamic" id="funnelBooked">25</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Consultation Visited Stage -->
+                            <div class="funnel-stage-row">
+                                <div class="stage-label-external" id="visitedExternal">Consultation Visited</div>
+                                <div class="funnel-stage-dynamic stage-visited" id="visitedBar" style="width: 13%;">
+                                    <div class="stage-content-container">
+                                        <div class="stage-label-internal" id="visitedInternal">Consultation Visited</div>
+                                        <div class="stage-count-dynamic" id="funnelVisited">5</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Conversion Section - 20% width -->
+                        <div class="conversion-section">
+                            <div class="conversion-box-dedicated conv-1" id="funnelContactedConversion">80%</div>
+                            <div class="conversion-box-dedicated conv-2" id="funnelBookedConversion">24%</div>
+                            <div class="conversion-box-dedicated conv-3" id="funnelVisitedConversion">67%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side Professional Metrics -->
+                <div class="right-metrics-pro">
+                    <div class="metric-card-pro">
+                        <div class="metric-info-pro">
+                            <h3>Follow Up</h3>
+                            <div class="metric-value-pro" id="followUp">74</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card-pro">
+                        <div class="metric-info-pro">
+                            <h3>Overall Past / Pending Follow up</h3>
+                            <div class="metric-value-pro" id="pendingFollowup">927</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card-pro">
+                        <div class="metric-info-pro">
+                            <h3>Lost Lead</h3>
+                            <div class="metric-value-pro" id="lostLeads">6</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card-pro">
+                        <div class="metric-info-pro">
+                            <h3>Dead</h3>
+                            <div class="metric-value-pro" id="deadLeads">4</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- City Funnels Section -->
+            <div class="city-funnels-section">
+                <!-- Mumbai Funnel -->
+                <div class="city-funnel">
+                    <div class="city-funnel-header">
+                        <h3 class="city-funnel-title">Mumbai (In person)</h3>
+                    </div>
+                    <div class="city-funnel-container">
+                        <!-- Total Leads -->
+                        <div class="city-funnel-stage-row">
+                            <div class="city-stage-label-external mumbai-total-external">Total Leads</div>
+                            <div class="city-funnel-stage city-total-leads" id="mumbaiTotalBar" style="width: 100%;">
+                                <div class="city-stage-content">
+                                    <div class="city-stage-label-internal mumbai-total-internal">Total Leads</div>
+                                    <div class="city-stage-count" id="mumbaiTotalLeads">45</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Consultation Booked -->
+                        <div class="city-funnel-stage-row">
+                            <div class="city-stage-label-external mumbai-booked-external">Consultation Booked</div>
+                            <div class="city-funnel-stage city-booked" id="mumbaiBookedBar" style="width: 60%;">
+                                <div class="city-stage-content">
+                                    <div class="city-stage-label-internal mumbai-booked-internal">Consultation Booked</div>
+                                    <div class="city-stage-count" id="mumbaiBookedLeads">27</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Consultation Visited -->
+                        <div class="city-funnel-stage-row">
+                            <div class="city-stage-label-external mumbai-visited-external">Consultation Visited</div>
+                            <div class="city-funnel-stage city-visited" id="mumbaiVisitedBar" style="width: 40%;">
+                                <div class="city-stage-content">
+                                    <div class="city-stage-label-internal mumbai-visited-internal">Consultation Visited</div>
+                                    <div class="city-stage-count" id="mumbaiVisitedLeads">18</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delhi Funnel -->
+                <div class="city-funnel">
+                    <div class="city-funnel-header">
+                        <h3 class="city-funnel-title">Delhi (In person)</h3>
+                    </div>
+                    <div class="city-funnel-container">
+                        <!-- Total Leads -->
+                        <div class="city-funnel-stage-row">
+                            <div class="city-stage-label-external delhi-total-external">Total Leads</div>
+                            <div class="city-funnel-stage city-total-leads" id="delhiTotalBar" style="width: 100%;">
+                                <div class="city-stage-content">
+                                    <div class="city-stage-label-internal delhi-total-internal">Total Leads</div>
+                                    <div class="city-stage-count" id="delhiTotalLeads">32</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Consultation Booked -->
+                        <div class="city-funnel-stage-row">
+                            <div class="city-stage-label-external delhi-booked-external">Consultation Booked</div>
+                            <div class="city-funnel-stage city-booked" id="delhiBookedBar" style="width: 50%;">
+                                <div class="city-stage-content">
+                                    <div class="city-stage-label-internal delhi-booked-internal">Consultation Booked</div>
+                                    <div class="city-stage-count" id="delhiBookedLeads">16</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Consultation Visited -->
+                        <div class="city-funnel-stage-row">
+                            <div class="city-stage-label-external delhi-visited-external">Consultation Visited</div>
+                            <div class="city-funnel-stage city-visited" id="delhiVisitedBar" style="width: 25%;">
+                                <div class="city-stage-content">
+                                    <div class="city-stage-label-internal delhi-visited-internal">Consultation Visited</div>
+                                    <div class="city-stage-count" id="delhiVisitedLeads">8</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bangalore Funnel -->
+                <div class="city-funnel">
+                    <div class="city-funnel-header">
+                        <h3 class="city-funnel-title">Bangalore (In person)</h3>
+                    </div>
+                    <div class="city-funnel-container">
+                        <!-- Total Leads -->
+                        <div class="city-funnel-stage-row">
+                            <div class="city-stage-label-external bangalore-total-external">Total Leads</div>
+                            <div class="city-funnel-stage city-total-leads" id="bangaloreTotalBar" style="width: 100%;">
+                                <div class="city-stage-content">
+                                    <div class="city-stage-label-internal bangalore-total-internal">Total Leads</div>
+                                    <div class="city-stage-count" id="bangaloreTotalLeads">28</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Consultation Booked -->
+                        <div class="city-funnel-stage-row">
+                            <div class="city-stage-label-external bangalore-booked-external">Consultation Booked</div>
+                            <div class="city-funnel-stage city-booked" id="bangaloreBookedBar" style="width: 75%;">
+                                <div class="city-stage-content">
+                                    <div class="city-stage-label-internal bangalore-booked-internal">Consultation Booked</div>
+                                    <div class="city-stage-count" id="bangaloreBookedLeads">21</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Consultation Visited -->
+                        <div class="city-funnel-stage-row">
+                            <div class="city-stage-label-external bangalore-visited-external">Consultation Visited</div>
+                            <div class="city-funnel-stage city-visited" id="bangaloreVisitedBar" style="width: 43%;">
+                                <div class="city-stage-content">
+                                    <div class="city-stage-label-internal bangalore-visited-internal">Consultation Visited</div>
+                                    <div class="city-stage-count" id="bangaloreVisitedLeads">12</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Others Funnel -->
+                <div class="city-funnel">
+                    <div class="city-funnel-header">
+                        <h3 class="city-funnel-title">Video Consultation</h3>
+                    </div>
+                    <div class="city-funnel-container">
+                        <!-- Total Leads -->
+                        <div class="city-funnel-stage-row">
+                            <div class="city-stage-label-external others-total-external">Total Leads</div>
+                            <div class="city-funnel-stage city-total-leads" id="othersTotalBar" style="width: 100%;">
+                                <div class="city-stage-content">
+                                    <div class="city-stage-label-internal others-total-internal">Total Leads</div>
+                                    <div class="city-stage-count" id="othersTotalLeads">15</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Consultation Booked -->
+                        <div class="city-funnel-stage-row">
+                            <div class="city-stage-label-external others-booked-external">Consultation Booked</div>
+                            <div class="city-funnel-stage city-booked" id="othersBookedBar" style="width: 33%;">
+                                <div class="city-stage-content">
+                                    <div class="city-stage-label-internal others-booked-internal">Consultation Booked</div>
+                                    <div class="city-stage-count" id="othersBookedLeads">5</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Consultation Visited -->
+                        <div class="city-funnel-stage-row">
+                            <div class="city-stage-label-external others-visited-external">Consultation Visited</div>
+                            <div class="city-funnel-stage city-visited" id="othersVisitedBar" style="width: 20%;">
+                                <div class="city-stage-content">
+                                    <div class="city-stage-label-internal others-visited-internal">Consultation Visited</div>
+                                    <div class="city-stage-count" id="othersVisitedLeads">3</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section: Pie Chart + MIS -->
+            <div class="charts-section">
+                <!-- Lead Sources Pie Chart -->
+                <div class="pie-chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Lead Sources</h3>
+                    </div>
+                    <canvas id="pieChart" style="height: 400px; max-height: 400px;"></canvas>
+                </div>
+
+                <!-- MIS Section -->
+                <div class="mis-section">
+                    <div class="mis-header">
+                        <h3 class="mis-title">CRM Conversion (MIS)</h3>
+                        <p class="mis-subtitle">Performance tracking with planned vs actual metrics</p>
+                    </div>
+                    <table class="mis-table">
+                        <thead>
+                            <tr>
+                                <th>Metrics</th>
+                                <th>Actual</th>
+                                <th>Planned</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="metric-name">No of Leads</td>
+                                <td class="actual-value" id="actualLeads">120</td>
+                                <td class="planned-value">100</td>
+                                <td class="score-value score-positive" id="scoreLeads">90%</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">Consultation Booked</td>
+                                <td class="actual-value" id="actualCB">69</td>
+                                <td class="planned-value">70</td>
+                                <td class="score-value score-neutral" id="scoreConsultationBooked">98%</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">Conversion Ratio</td>
+                                <td class="actual-value" id="actualConversion">58%</td>
+                                <td class="planned-value">70%</td>
+                                <td class="score-value score-negative" id="scoreConversionRatio">-17%</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">Consultation Visited</td>
+                                <td class="actual-value" id="actualCV">41</td>
+                                <td class="planned-value">56</td>
+                                <td class="score-value score-negative" id="scoreConsultationVisited">-27%</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">Visit Conversion Ratio</td>
+                                <td class="actual-value" id="actualConversionVisit">59%</td>
+                                <td class="planned-value">80%</td>
+                                <td class="score-value score-negative" id="scoreVisitConversion">-26%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// ================================
+// CRM Dashboard - Unified JS File
+// ================================
+
+/* ========== Utility Functions ========== */
+function formatDateToYMD(date) {
+  const y = date.getFullYear(), m = String(date.getMonth()+1).padStart(2, '0'), d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function parseLeadDateString(s) {
+  if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s);
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  return m ? new Date(`${m[3]}-${m[2]}-${m[1]}`) : new Date(s);
+}
+
+function getTextWidth(text, font) {
+  const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
+  ctx.font = font;
+  return ctx.measureText(text).width;
+}
+
+function checkTextOverflow(textEl, containerEl) {
+  if (!textEl || !containerEl) return false;
+  const style = getComputedStyle(textEl), font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  return getTextWidth(textEl.textContent, font) > containerEl.clientWidth - 60;
+}
+
+/* ========== Sidebar & Spinner ========== */
+document.addEventListener('DOMContentLoaded', () => {
+  const sidebar = document.querySelector('.sidebar'), toggleBtn = document.querySelector('.sidebar-toggle');
+  if (sidebar) sidebar.classList.add('collapsed');
+  if (toggleBtn) toggleBtn.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+  initializeFilters();
+  updateFunnelDisplay();
+  updateConversionRatios();
+});
+
+
+/* ========== Auth ========== */
+function readLoggedUser() {
+  try {
+    const raw = localStorage.getItem("loggedInUser");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error("Invalid loggedInUser in localStorage", err);
+    return null;
+  }
+}
+
+function redirectToLogin() {
+  const base = window.crmApi ? crmApi.getAppBaseUrl() : `${window.location.origin}${window.location.pathname}`;
+  window.top.location.href = `${base}?page=Login`;
+}
+
+const loggedUser = readLoggedUser() || { username: "", permission: "User" };
+
+function hideSpinner() {
+  const spinner = document.getElementById("spinnerOverlay");
+  if (spinner) {
+    spinner.style.opacity = "0";
+    spinner.style.visibility = "hidden";
+  }
+}
+
+/* ========== State & Data Fetching ========== */
+let allLeads = [], allConsultations = [], misDataPerson = [];
+
+if (!loggedUser.username) {
+  hideSpinner();
+  redirectToLogin();
+} else if (typeof google !== "undefined" && google.script) {
+  crmApi.invokeGas("retriveLeadData2").then(onLeadsFetched).catch((err) => {
+    console.error("retriveLeadData2 failed", err);
+    hideSpinner();
+  });
+}
+
+function onLeadsFetched(data) {
+  allLeads = JSON.parse(data);
+  crmApi.invokeGas("retriveConsData").then(onConsultationsFetched).catch((err) => console.error("retriveConsData failed", err));
+}
+
+function onConsultationsFetched(data) {
+  allConsultations = JSON.parse(data);
+  refreshDashboardForCurrentWeek();
+  crmApi.invokeGas("getLatestWeekEndData").then(onMisFetched).catch((err) => {
+    console.error("getLatestWeekEndData failed", err);
+    hideSpinner();
+  });
+  hideSpinner();
+}
+
+function onMisFetched(data) {
+  const misData = JSON.parse(data);
+  misDataPerson = misData.map(r => ({ name: r[0].toString().toLowerCase(), score: r[3] }));
+  console.log(misDataPerson);
+  updateHeaderProfile(loggedUser.username);
+}
+
+/* ========== Date Helpers ========== */
+function getCurrentWeekRange() {
+  const today = new Date(), first = today.getDate() - today.getDay(),
+        sunday = new Date(today.setDate(first)), saturday = new Date(sunday.getTime() + 6 * 86400000);
+  sunday.setHours(0, 0, 0, 0);
+  saturday.setHours(23, 59, 59, 999);
+  return { start: sunday, end: saturday };
+}
+
+function filterByCriteria(start, end, person, city, platform) {
+  const inRange = lead => {
+    const d = parseLeadDateString(lead["lead date"]);
+    return d && d >= start && d <= end;
+  };
+
+  const inRangeConsultation = lead => {
+    const d = parseLeadDateString(lead["timestamp"]);
+    return d && d >= start && d <= end;
+  };
+
+  const match = lead => {
+    const crmMatch = person ? lead["assigned to"] === person : true;
+    const cityMatch = city ? (city === 'Others'
+      ? !["Mumbai", "Delhi", "Bangalore"].includes(lead.city)
+      : lead.city === city) : true;
+    const platformMatch = platform ? lead.platform === platform : true;
+    return inRange(lead) && crmMatch && cityMatch && platformMatch;
+  };
+
+  const matchConsultation = lead => {
+    const crmMatch = person ? lead["assigned to"] === person : true;
+    const cityMatch = city ? (city === 'Others'
+      ? !["Mumbai", "Delhi", "Bangalore"].includes(lead.city)
+      : lead.city === city) : true;
+    const platformMatch = platform ? lead.platform === platform : true;
+    return inRangeConsultation(lead) && crmMatch && cityMatch && platformMatch;
+  };
+
+  return {
+    leads: allLeads.filter(match),
+    consultations: allConsultations.filter(matchConsultation)
+  };
+}
+
+/* ========== Dashboard Rendering ========== */
+function refreshDashboardForCurrentWeek() {
+  const { start, end } = getCurrentWeekRange();
+  const { leads, consultations } = filterByCriteria(start, end, loggedUser.username, '', '');
+  updateDashboard(leads, consultations);
+}
+
+function updateDashboard(leads, consultations) {
+  const total = leads.length,
+        visited = leads.filter(l => l["lead status"] === "Consultation Visited").length,
+        contacted = leads.filter(l => !["Ringing / Busy","Not Reachable"].includes(l["lead status"])).length,
+        followup = leads.filter(l => ["Warm Lead","Cold Lead 1","Cold Lead 2","Deferred Lead","Ringing / Busy","Not Reachable"].includes(l["lead status"])).length,
+        lost = leads.filter(l => l["lead status"] === "Lost").length,
+        dead = leads.filter(l => l["lead status"] === "Dead").length,
+        booked = consultations.length;
+
+  setText("funnelNewLeads", total);
+  setText("funnelContacted", contacted);
+  setText("funnelBooked", booked);
+  setText("funnelVisited", visited);
+  setText("followUp", followup);
+  setText("lostLeads", lost);
+  setText("deadLeads", dead);
+
+const todaysDate = new Date();
+todaysDate.setHours(0, 0, 0, 0); // Set today's date to midnight (no time part)
+console.log(todaysDate)
+// Filter the leads where the "lead date" is less than or equal to today's date and the status is one of the specified ones
+const filteredAllPendingLeads = allLeads.filter(lead => {
+  const leadDate = new Date(lead["follow up date"]);
+
+ // Sanitize lead status (trim, case-insensitive check)
+  const validStatuses = ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy", "Not Reachable"];
+  const leadStatus = lead["lead status"]?.trim().toLowerCase();
+
+  // Check if the lead status is valid and the date condition is met
+  return leadDate <= todaysDate && validStatuses.some(status => status.toLowerCase() === leadStatus) && loggedUser.username === lead["assigned to"];
+});
+
+document.getElementById("pendingFollowup").textContent = filteredAllPendingLeads.length;
+
+ 
+  setHeaderConversion(total, booked);
+  updateMIS("scoreLeads", total, 100);
+  updateMIS("scoreConsultationBooked", booked, 70);
+
+  const conversionPercent = total ? (booked / total) * 100 : 0;
+  updateMIS("scoreConversionRatio", conversionPercent, 70);
+
+  updateMIS("scoreConsultationVisited", visited, 56);
+
+  const visitConversionPercent = booked ? (visited / booked) * 100 : 0;
+  updateMIS("scoreVisitConversion", visitConversionPercent, 80);
+
+  updateMISTable(total, booked, conversionPercent, visited, visitConversionPercent);
+
+  updateFunnelDisplay();
+  updateConversionRatios();
+  createPieChart(leads);
+  adjustCityFunnels(leads, consultations);
+
+}
+
+/* ========== UI Helpers ========== */
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = isNaN(value) ? value : Math.round(value);
+}
+
+function setHeaderConversion(total, booked) {
+  const el = document.getElementById("headerConversionRatio");
+  if (!el) return;
+  const conv = total ? Math.round((booked / total) * 100) : 0;
+  el.textContent = `${conv}%`;
+  el.className = conv >= 70 ? 'metric-value-compact positive' : 'metric-value-compact negative';
+}
+
+function updateMIS(id, actual, planned) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const score = (((actual / planned) * 100) - 100).toFixed(2);
+  el.textContent = `${score}%`;
+  el.className = score >= -5 ? 'score-value score-positive'
+                    : score >= -20 ? 'score-value score-neutral'
+                    : 'score-value score-negative';
+}
+
+function updateMISTable(total, booked, convPercent, visited, visitConvPercent) {
+  setText("actualLeads", total);
+  setText("actualCB", booked);
+  setText("actualConversion", `${convPercent.toFixed(2)}%`);
+  setText("actualCV", visited);
+  setText("actualConversionVisit", `${visitConvPercent.toFixed(2)}%`);
+}
+
+/* ========== Funnel Display ========== */
+function updateFunnelDisplay() {
+  const stages = [
+    { id: "funnelNewLeads", bar: "newLeadsBar", internal: "newLeadsInternal", external: "newLeadsExternal" },
+    { id: "funnelContacted", bar: "connectedBar", internal: "connectedInternal", external: "connectedExternal" },
+    { id: "funnelBooked", bar: "bookedBar", internal: "bookedInternal", external: "bookedExternal" },
+    { id: "funnelVisited", bar: "visitedBar", internal: "visitedInternal", external: "visitedExternal" }
+  ];
+
+  const values = stages.map(s => parseInt(document.getElementById(s.id)?.textContent) || 0);
+  const maxVal = Math.max(...values, 1);
+
+  stages.forEach((s, i) => {
+    const width = (values[i] / maxVal) * 100;
+    const bar = document.getElementById(s.bar);
+    if (bar) bar.style.width = `${width}%`;
+
+    const internal = document.getElementById(s.internal), external = document.getElementById(s.external);
+    if (internal && external) {
+      if (width > 30) { internal.classList.add("show"); external.classList.remove("show"); }
+      else { internal.classList.remove("show"); external.classList.add("show"); }
+    }
+  });
+}
+
+function updateConversionRatios() {
+  const a = parseInt(document.getElementById("funnelNewLeads").textContent) || 0,
+        b = parseInt(document.getElementById("funnelContacted").textContent) || 0,
+        c = parseInt(document.getElementById("funnelBooked").textContent) || 0;
+        d = parseInt(document.getElementById("funnelVisited").textContent) || 0;
+
+  setText("funnelContactedConversion", a ? `${Math.round((b / a) * 100)}%` : "0%");
+  setText("funnelBookedConversion", a ? `${Math.round((c / b) * 100)}%` : "0%");
+  setText("funnelVisitedConversion", a ? `${Math.round((d / c) * 100)}%` : "0%");
+}
+
+/* ========== City Funnel ========== */
+function adjustCityFunnels(leads, consultations) {
+  const cities = ["Mumbai","Delhi","Bangalore","Others"];
+  const stats = cities.reduce((acc, city) => ({ ...acc, [city]: { total:0, booked:0, visited:0 } }), {});
+
+  leads.forEach(l => {
+    const c = categorizeCity(l.city);
+    stats[c].total++;
+    if (l["lead status"] === "Consultation Visited") stats[c].visited++;
+  });
+
+  consultations.forEach((cn)=>{
+    if(cn["consultation type"] === "In-person"){
+      stats["Mumbai"].booked++;
+    }else if(cn["consultation type"] === "Delhi (In-person)"){
+      stats["Delhi"].booked++
+    }else if(cn["consultation type"] === "Bangalore (In-person)"){
+      stats["Bangalore"].booked++
+    }else{
+      stats["Others"].booked++
+    }
+  });
+
+  cities.forEach(city => {
+    const key = city.toLowerCase();
+    const { total, booked, visited } = stats[city];
+    const bookedPct = total ? (booked / total) * 100 : 0;
+    const visitedPct = total ? (visited / total) * 100 : 0;
+
+    setText(`${key}TotalLeads`, total);
+    setText(`${key}BookedLeads`, booked);
+    setText(`${key}VisitedLeads`, visited);
+
+    const bookedBar = document.getElementById(`${key}BookedBar`);
+    const visitedBar = document.getElementById(`${key}VisitedBar`);
+    if (bookedBar) bookedBar.style.width = `${Math.max(bookedPct, 15)}%`;
+    if (visitedBar) visitedBar.style.width = `${Math.max(visitedPct, 10)}%`;
+
+    toggleCityLabel(`${key}-booked`, bookedPct);
+    toggleCityLabel(`${key}-visited`, visitedPct);
+  });
+}
+
+
+function categorizeCity(c) {
+  if (!c) return "Others";
+  const lc = c.toLowerCase();
+  if (lc.includes("mumbai") || lc.includes("bombay")) return "Mumbai";
+  if (lc.includes("delhi")) return "Delhi";
+  if (lc.includes("bangalore") || lc.includes("bengaluru")) return "Bangalore";
+  return "Others";
+}
+
+function toggleCityLabel(base, pct) {
+  const internal = document.querySelector(`.${base}-internal`),
+        external = document.querySelector(`.${base}-external`);
+  if (internal && external) {
+    if (pct < 30 || checkTextOverflow(internal, internal.parentElement.parentElement)) {
+      internal.classList.remove("show");
+      external.classList.add("show");
+    } else {
+      internal.classList.add("show");
+      external.classList.remove("show");
+    }
+  }
+}
+
+/* ========== Pie Chart ========== */
+function createPieChart(leads) {
+  const canvas = document.getElementById('pieChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const counts = {};
+  leads.forEach(l => {
+    const platform = l.platform || 'Unknown';
+    counts[platform] = (counts[platform] || 0) + 1;
+  });
+
+  const labels = Object.keys(counts),
+        data = Object.values(counts),
+        colors = ['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF','#FF9F40'];
+
+  if (window.leadSourceChart) window.leadSourceChart.destroy();
+
+  window.leadSourceChart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors.slice(0, labels.length),
+        borderColor: '#fff',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 12 }, usePointStyle: true }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = context.raw || 0;
+              return `${label}: ${value}`;
+            }
+          }
+        },
+        datalabels: {
+          display: function(context) {
+            const value = context.dataset.data[context.dataIndex];
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            return (value / total) > 0.15;
+          },
+          color: '#fff',
+          font: { weight: 'bold', size:14 },
+          formatter: function(value, context) {
+            const label = context.chart.data.labels[context.dataIndex];
+            return `${label}: ${value}`;
+          }
+        }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+}
+
+
+/* ========== Filter Logic ========== */
+function initializeFilters() {
+  const period = document.getElementById("period"),
+        startInput = document.getElementById("startDate"),
+        endInput = document.getElementById("endDate"),
+        applyBtn = document.getElementById("applyFilters"),
+        resetBtn = document.getElementById("resetFilter");
+
+  period?.addEventListener('change', () => {
+    const show = period.value === "Custom";
+    startInput.closest('.filter-compact')?.classList.toggle('hide', !show);
+    endInput.closest('.filter-compact')?.classList.toggle('hide', !show);
+  });
+
+  applyBtn?.addEventListener('click', () => {
+    let range = { start: new Date(), end: new Date() };
+    const now = getCurrentWeekRange(), val = period.value;
+
+    switch (val) {
+      case "Last Week": range = getOffsetWeek(-1); break;
+      case "Today": range = getSingleDate(0); break;
+      case "Yesterday": range = getSingleDate(-1); break;
+      case "Current Month": range = getMonthRange(0); break;
+      case "Last Month": range = getMonthRange(-1); break;
+      case "Custom":
+        if (!startInput.value || !endInput.value) return alert("Select dates.");
+        range.start = new Date(startInput.value);
+        range.start.setHours(0,0,0,0);
+        range.end = new Date(endInput.value);
+        range.end.setHours(23,59,59,999);
+        break;
+      default: range = now;
+    }
+
+    const city = document.getElementById("cityFilter").value,
+          pf = document.getElementById("platformFilter").value;
+    const { leads, consultations } = filterByCriteria(range.start, range.end, loggedUser.username, city, pf);
+
+    updateHeaderProfile(loggedUser.username);
+    updateDashboard(leads, consultations);
+    const todaysDate = new Date();
+    todaysDate.setHours(0, 0, 0, 0);
+
+
+if(loggedUser.username === ""){
+const filteredAllPendingLeads = allLeads.filter(lead => {
+  const leadDate = new Date(lead["follow up date"]);
+
+ // Sanitize lead status (trim, case-insensitive check)
+  const validStatuses = ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy", "Not Reachable"];
+  const leadStatus = lead["lead status"]?.trim().toLowerCase();
+
+  // Check if the lead status is valid and the date condition is met
+  return leadDate <= todaysDate && validStatuses.some(status => status.toLowerCase() === leadStatus);
+
+});
+document.getElementById("pendingFollowup").textContent = filteredAllPendingLeads.length;
+}else {
+  const filteredAllPendingLeads = allLeads.filter(lead => {
+  const leadDate = new Date(lead["follow up date"]);
+
+ // Sanitize lead status (trim, case-insensitive check)
+  const validStatuses = ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy", "Not Reachable"];
+  const leadStatus = lead["lead status"]?.trim().toLowerCase();
+
+  // Check if the lead status is valid and the date condition is met
+  return leadDate <= todaysDate && validStatuses.some(status => status.toLowerCase() === leadStatus) && lead["assigned to"] === loggedUser.username;
+
+});
+document.getElementById("pendingFollowup").textContent = filteredAllPendingLeads.length;
+}
+  });
+
+  resetBtn?.addEventListener('click', () => {
+    startInput.value = endInput.value = "";
+    period.value = "Current Week";
+    document.querySelectorAll('#startDate, #endDate').forEach(el => el.closest('.filter-compact')?.classList.add('hide'));
+    document.getElementById("cityFilter").value = "";
+    document.getElementById("platformFilter").value = "";
+    document.getElementById("headerMisScoring").textContent = "NaN";
+    document.getElementById("headerMisScoring").className = "metric-value-compact";
+    refreshDashboardForCurrentWeek();
+
+    const todaysDate = new Date();
+    todaysDate.setHours(0, 0, 0, 0);
+    const filteredAllPendingLeads = allLeads.filter(lead => {
+    const leadDate = new Date(lead["follow up date"]);
+    
+    // Sanitize lead status (trim, case-insensitive check)
+    const validStatuses = ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy", "Not Reachable"];
+    const leadStatus = lead["lead status"]?.trim().toLowerCase();
+    
+    // Check if the lead status is valid and the date condition is met
+    return leadDate <= todaysDate && validStatuses.some(status=> status.toLowerCase() === leadStatus);
+    
+      });
+      document.getElementById("pendingFollowup").textContent = filteredAllPendingLeads.length;
+  });
+}
+
+function getOffsetWeek(offset) {
+  const w = getCurrentWeekRange();
+  w.start.setDate(w.start.getDate() + offset * 7);
+  w.end.setDate(w.end.getDate() + offset * 7);
+  return w;
+}
+
+function getSingleDate(offset) {
+  const d = new Date(); d.setDate(d.getDate()+offset);
+  d.setHours(0,0,0,0); const e = new Date(d); e.setHours(23,59,59,999);
+  return { start: d, end: e };
+}
+
+function getMonthRange(offset) {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth() + offset;
+  const s = new Date(y, m, 1, 0,0,0,0), e = new Date(y, m+1, 0, 23,59,59,999);
+  return { start: s, end: e };
+}
+
+/* ========== Profile Header Updates ========== */
+function updateHeaderProfile(person) {
+  const imgUrls = {
+    rahul: 'https://lh3.googleusercontent.com/d/18isY2bArhNWZOQIaogJtSCgpMr_k-wQN=s200',
+    sharin: 'https://lh3.googleusercontent.com/d/1VoEMZcmbGGdoeeXRm0Yt7uQy1zMq5iZa=s200',
+    all: 'https://lh3.googleusercontent.com/d/1AJNywxCx-Q7UIn0M7gYHpyIPUBn6cp10=s200'
+  };
+  const nameKey = person.toLowerCase() || 'all';
+  const photo = imgUrls[nameKey] || imgUrls['all'];
+
+  const iconEl = document.getElementById('headerProfileIcon'),
+        nameEl = document.getElementById('headerProfileName'),
+        roleEl = document.getElementById('headerProfileDesignation'),
+        misEl = document.getElementById('headerMisScoring');
+
+  nameEl.textContent = person || 'N/A';
+  roleEl.textContent = 'CRM Executive';
+  if (iconEl) iconEl.innerHTML = `<img src="${photo}" alt="Profile">`;
+
+  if (!person) {
+    misEl.textContent = 'NaN';
+    misEl.className = 'metric-value-compact';
+    return;
+  }
+
+  const pdata = misDataPerson.find(p => p.name === person.toLowerCase());
+  console.log("Person Found :")
+  console.log(pdata)
+  if (pdata) {
+    const scorePct = pdata.score * 100;
+    misEl.textContent = `${scorePct.toFixed(0)}%`;
+    misEl.className = scorePct >= -5 ? 'metric-value-compact positive'
+                        : scorePct >= -20 ? 'metric-value-compact neutral'
+                                         : 'metric-value-compact negative';
+  }else {
+    misEl.textContent = 'NaN';
+    misEl.className = 'metric-value-compact';
+  }
+}
+
+/* ========== Error Handling ========== */
+window.addEventListener('error', e => {
+  console.error('Dashboard Error:', e.message);
+  hideSpinner();
+});
+
+/*======= Nav Links Logic =======*/
+
+        const uploadLeadFun = document.querySelector(".uploadLead");
+        uploadLeadFun.addEventListener("click",()=>{
+          crmApi.navigateToPage("uploadLead");
+        })
+
+        const allLeadsBtn = document.querySelector(".allLeads");
+        allLeadsBtn.addEventListener("click",()=>{
+          crmApi.navigateToPage("Home");
+        })
+
+</script>
+
+</body>
+</html>

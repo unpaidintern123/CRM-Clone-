@@ -1,0 +1,413 @@
+<script>
+
+var allParsedLeads = null;
+var allParsedConsultationBooked = null;
+crmApi.invokeGas("getCampaignName").then(onSuccess).catch((err) => console.error("getCampaignName failed", err))
+
+ function onSuccess(data){
+    allDropDownData = data;
+    // console.log(allDropDownData); 
+    populateCampaignName(allDropDownData.campaignNames);
+    crmApi.invokeGas("retriveLeadData2").then(allLead).catch((err) => console.error("retriveLeadData2 failed", err));
+}
+
+function allLead(leadDatabase){
+  allParsedLeads = JSON.parse(leadDatabase); 
+  crmApi.invokeGas("retriveConsData").then(allConsultationBooked).catch((err) => console.error("retriveConsData failed", err));
+  // console.log(allParsedLeads);
+}
+
+function allConsultationBooked(leadDatabase){
+  allParsedConsultationBooked = JSON.parse(leadDatabase);
+  // console.log(allParsedConsultationBooked);
+  document.getElementById('spinnerOverlay').style.opacity = '0';
+  document.getElementById('spinnerOverlay').style.visibility = 'hidden';
+}
+
+
+function populateCampaignName(campaignName){
+  const dropdown = document.getElementById("campaignFilter");
+  const options = campaignName.map((name) => `<option value="${name}">${name}</option>`);
+  options.unshift(`<option value="" disabled selected>Select a campaign</option>`);
+  dropdown.innerHTML = options.join(",");
+}
+
+const searchBtn = document.getElementById("searchBtn");
+
+
+// const countOfTotalLead = allParsedLeads.filter(lead => );
+
+function fillTheTable(leads,consBookedLeads) {
+
+  //For AdName
+  const adNameTable = document.getElementById("adNames");
+  const adNames = [...new Set(leads.map( lead => lead["adname"]))]
+  // console.log(adNames);
+
+  const tableContent = adNames.map((name) => {
+    
+    const totalLeadsC = leads.filter((lead)=> lead["adname"] === name).length;
+    const consultationBookedC = consBookedLeads.filter((lead)=> lead["adname"] === name && lead["lead status"] === "Consultation Booked").length;
+    const consultationVisitedC = leads.filter((lead)=> lead["adname"] === name && lead["lead status"] === "Consultation Visited").length;
+    const conversionRatioAdName = ((consultationVisitedC/totalLeadsC)*100).toFixed(2);
+    const totalOrderBooked = leads.filter((lead) => lead["adname"] === name && lead["order booked status"] === "Booked").length;
+
+      return `<tr>
+          <td>${name}</td>
+          <td>${totalLeadsC}</td>
+          <td><span class="metric-consultation-booked">${consultationBookedC}</span></td>
+          <td><span class="metric-consultation-visited">${consultationVisitedC}</span></td>
+          <td><span class="metric-order-booked">${totalOrderBooked}</span></td>
+          <td><span class="metric-conversion">${conversionRatioAdName}%</span></td>
+        </tr>`
+  }).join("")
+
+  adNameTable.innerHTML = tableContent; 
+
+  //AdsetName
+  const adSetNamesTable = document.getElementById("adSetNames");
+  const adSetNames = [...new Set(leads.map(lead => lead["adsetname"]))];
+  // console.log(adSetNames)
+
+  const tableContentAdSetName = adSetNames.map((name)=>{
+
+    const totalLeadCount = leads.filter(lead => lead["adsetname"] === name).length;
+    const consultationBookedC = consBookedLeads.filter(lead => lead["adsetname"] === name && lead["lead status"] === "Consultation Booked").length;
+    const consultationVisitedC = leads.filter(lead => lead["adsetname"] === name && lead["lead status"] === "Consultation Visited").length
+    const conversionRatioAdSetName = ((consultationVisitedC/totalLeadCount)*100).toFixed(2);
+    const totalOrderBooked = leads.filter((lead) => lead["adsetname"] === name && lead["order booked status"] === "Booked").length;
+
+    return `<tr>
+                  <td>${name}</td>
+                  <td>${totalLeadCount}</td>
+                  <td><span class="metric-consultation-booked">${consultationBookedC}</span></td>
+                  <td><span class="metric-consultation-visited">${consultationVisitedC}</span></td>
+                  <td><span class="metric-order-booked">${totalOrderBooked}</span></td>
+                  <td><span class="metric-conversion">${conversionRatioAdSetName}%</span></td>
+                </tr>`
+  }).join("")  
+
+  adSetNamesTable.innerHTML = tableContentAdSetName;
+
+  //Placements
+  const placementTable = document.getElementById("placement");
+  const placementNames = [...new Set(leads.map(lead => lead["placement"]))];
+
+  const tableContentPlacement = placementNames.map((name)=> {
+
+    const totalLeadCount = leads.filter(lead => lead["placement"] === name).length;
+    const consultationBookedC = consBookedLeads.filter(lead => lead["placement"] === name && lead["lead status"] === "Consultation Booked").length;
+    const consultationVisitedC = leads.filter(lead => lead["placement"] === name && lead["lead status"] === "Consultation Visited").length;
+    const conversionRatioPlacement = ((consultationVisitedC/totalLeadCount)*100).toFixed(2);
+    const totalOrderBooked = leads.filter((lead) => lead["placement"] === name && lead["order booked status"] === "Booked").length;
+
+    return `<tr>
+                  <td>${name}</td>
+                  <td>${totalLeadCount}</td>
+                  <td><span class="metric-consultation-booked">${consultationBookedC}</span></td>
+                  <td><span class="metric-consultation-visited">${consultationVisitedC}</span></td>
+                  <td><span class="metric-order-booked">${totalOrderBooked}</span></td>
+                  <td><span class="metric-conversion">${conversionRatioPlacement}%</span></td>
+                </tr>`
+  }).join("")
+  placementTable.innerHTML = tableContentPlacement;
+
+  //Platforms
+  const platformTable = document.getElementById("platform");
+  const platformNames = [...new Set(leads.map(lead => lead["campaignsource"]))];
+
+  const tableContentPlatform = platformNames.map((name) => {
+    
+    const totalLeadCount = leads.filter(lead => lead["campaignsource"] === name).length;
+    const consultationBookedC = consBookedLeads.filter(lead => lead["campaignsource"] === name && lead["lead status"] === "Consultation Booked").length;
+    const consultationVisitedC = leads.filter(lead => lead["campaignsource"] === name && lead["lead status"] === "Consultation Visited").length;
+    const conversionRatioplatform = ((consultationVisitedC/totalLeadCount)*100).toFixed(2);
+    const totalOrderBooked = leads.filter((lead) => lead["campaignsource"] === name && lead["order booked status"] === "Booked").length;
+
+    return `<tr>
+                  <td>${name}</td>
+                  <td>${totalLeadCount}</td>
+                  <td><span class="metric-consultation-booked">${consultationBookedC}</span></td>
+                  <td><span class="metric-consultation-visited">${consultationVisitedC}</span></td>
+                  <td><span class="metric-order-booked">${totalOrderBooked}</span></td>
+                  <td><span class="metric-conversion">${conversionRatioplatform}%</span></td>
+                </tr>`
+  }).join("")
+
+  platformTable.innerHTML = tableContentPlatform;
+}
+
+
+searchBtn.addEventListener("click",()=>{
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+  console.log("search clicked");
+
+  if(!startDate || !endDate){
+    alert("Please select both start and end dates.")
+    return
+  }
+
+  const startDateVal = new Date(startDate + "T00:00:00");
+  const endDateVal = new Date(endDate + "T23:59:00");
+  const campaignFilterVal = document.getElementById("campaignFilter").value;
+
+  const filteredData = allParsedLeads.filter((lead) => {
+    const leadDate = new Date(lead["lead date"]);
+    const isDateMatch = leadDate >= startDateVal && leadDate <= endDateVal;
+    const isCampaignNameMatch = campaignFilterVal === "" ? true : lead["campaignname"] === campaignFilterVal;
+
+    return isDateMatch && isCampaignNameMatch;
+  })
+
+  const fitleredConsBooked = allParsedConsultationBooked.filter((lead) => {
+    const leadDate = new Date(lead["lead date"]);
+    const isDateMatch = leadDate >= startDateVal && leadDate <= endDateVal;
+    const isCampaignNameMatch = campaignFilterVal === "" ? true : lead["campaignname"] === campaignFilterVal;
+    return isDateMatch && isCampaignNameMatch;
+  })
+  
+  fillTheTable(filteredData,fitleredConsBooked);
+  fillTheTopPerformingConversion(filteredData);
+
+})
+
+function fillTheTopPerformingConversion(leads) {
+  const topAdNamesTable = document.getElementById("topAdNames");
+  const adNames = [...new Set(leads.map(lead => lead["adname"]))];
+  // console.log(adNames)
+
+  const adPerformance = adNames.map(name => {
+    const totalLeadsC = leads.filter((lead)=> lead["adname"] === name).length;
+    const consultationVisitedC = leads.filter((lead)=> lead["adname"] === name && lead["lead status"] === "Consultation Visited").length;
+    const conversionRatioAdName = totalLeadsC ? (consultationVisitedC / totalLeadsC) * 100 : 0;
+    
+    return {
+      name,
+      totalLeadsC,
+      consultationVisitedC,
+      conversionRate : +conversionRatioAdName.toFixed(2)
+    }
+  })
+  
+  adPerformance.sort((a,b)=>{
+     if (b.conversionRate !== a.conversionRate) {
+      console.log("inside Conversion Rate");
+
+      return b.conversionRate - a.conversionRate;
+    } else {
+      return b.totalLeadsC - a.totalLeadsC;
+    }
+  })
+
+
+
+  const tableContentAdName = adPerformance.slice(0,5).map((ad,index)=>{
+    return `<li class="top-item">
+                <span class="top-rank">${index+1}</span>
+                <span class="top-name">${ad.name}</span>
+                <span class="top-score">${ad.conversionRate}%</span>
+              </li>`
+  }).join("")
+
+  topAdNamesTable.innerHTML = tableContentAdName;
+
+  //AdSetName
+  const topAdSetNamesTable = document.getElementById("topAdSetNames");
+  const adSetNames = [...new Set(leads.map(lead => lead["adsetname"]))];
+
+  const adSetNamePerformance = adSetNames.map((name) => {
+    const totalLeadsC = leads.filter((lead)=> lead["adsetname"] === name).length;
+    const consultationVisitedC = leads.filter((lead)=> lead["adsetname"] === name && lead["lead status"] === "Consultation Visited").length;
+    const conversionRatioAdName = totalLeadsC ? (consultationVisitedC / totalLeadsC) * 100 : 0;
+
+    return {
+      name,
+      totalLeadsC,
+      consultationVisitedC,
+      conversionRate : +conversionRatioAdName.toFixed(2)
+    }
+  })
+
+   adSetNamePerformance.sort((a,b)=>{
+     if (b.conversionRate !== a.conversionRate) {
+      console.log("inside Conversion Rate");
+
+      return b.conversionRate - a.conversionRate;
+    } else {
+      return b.totalLeadsC - a.totalLeadsC;
+    }
+  })
+
+  const tableContentAdSet = adSetNamePerformance.slice(0,5).map((ad,index)=>{
+    return `<li class="top-item">
+                <span class="top-rank">${index+1}</span>
+                <span class="top-name">${ad.name}</span>
+                <span class="top-score">${ad.conversionRate}%</span>
+              </li>`
+  }).join("")
+
+  topAdSetNamesTable.innerHTML = tableContentAdSet;
+}
+
+function fillTheTopPerformingOrder(leads) {
+  const topAdNamesTable = document.getElementById("topAdNames");
+  const adNames = [...new Set(leads.map(lead => lead["adname"]))];
+  // console.log(adNames)
+
+  const adPerformance = adNames.map(name => {
+    const totalLeadsC = leads.filter((lead)=> lead["adname"] === name).length;
+    const consultationVisitedC = leads.filter((lead)=> lead["adname"] === name && lead["lead status"] === "Consultation Visited").length;
+    const conversionRatioAdName = totalLeadsC ? (consultationVisitedC / totalLeadsC) * 100 : 0;
+    const totalOrderNo  = leads.filter((lead)=> lead["adname"] === name && lead["order booked status"] === "Booked").length;
+    
+    return {
+      name,
+      totalLeadsC,
+      consultationVisitedC,
+      conversionRate : +conversionRatioAdName.toFixed(2),
+      totalOrderNo
+    }
+  })
+  
+  adPerformance.sort((a,b)=>{
+     if (b.totalOrderNo !== a.totalOrderNo) {
+      console.log("inside Conversion Rate");
+
+      return b.totalOrderNo - a.totalOrderNo;
+    } else {
+      return b.conversionRate - a.conversionRate;
+    }
+  })
+
+
+
+  const tableContentAdName = adPerformance.slice(0,5).map((ad,index)=>{
+    return `<li class="top-item">
+                <span class="top-rank">${index+1}</span>
+                <span class="top-name">${ad.name}</span>
+                <span class="top-score">${ad.totalOrderNo}</span>
+              </li>`
+  }).join("")
+
+  topAdNamesTable.innerHTML = tableContentAdName;
+
+  //AdSetName
+  const topAdSetNamesTable = document.getElementById("topAdSetNames");
+  const adSetNames = [...new Set(leads.map(lead => lead["adsetname"]))];
+
+  const adSetNamePerformance = adSetNames.map((name) => {
+    const totalLeadsC = leads.filter((lead)=> lead["adsetname"] === name).length;
+    const consultationVisitedC = leads.filter((lead)=> lead["adsetname"] === name && lead["lead status"] === "Consultation Visited").length;
+    const conversionRatioAdName = totalLeadsC ? (consultationVisitedC / totalLeadsC) * 100 : 0;
+    const totalOrderNo = leads.filter((lead)=> lead["adname"] === name && lead["order booked status"] === "Booked").length;
+
+    return {
+      name,
+      totalLeadsC,
+      consultationVisitedC,
+      conversionRate : +conversionRatioAdName.toFixed(2),
+      totalOrderNo
+    }
+  })
+
+   adSetNamePerformance.sort((a,b)=>{
+     if (b.totalOrderNo !== a.totalOrderNo) {
+      console.log("inside Conversion Rate");
+
+      return b.totalOrderNo - a.totalOrderNo;
+    } else {
+      return b.conversionRate - a.conversionRate;
+    }
+  })
+
+  const tableContentAdSet = adSetNamePerformance.slice(0,5).map((ad,index)=>{
+    return `<li class="top-item">
+                <span class="top-rank">${index+1}</span>
+                <span class="top-name">${ad.name}</span>
+                <span class="top-score">${ad.totalOrderNo}</span>
+              </li>`
+  }).join("")
+
+  topAdSetNamesTable.innerHTML = tableContentAdSet;
+}
+
+const conversionBtn = document.getElementById("switchConversion");
+const orderBookedBtn = document.getElementById("switchOrders");
+
+conversionBtn.addEventListener("click",()=>{
+
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+ 
+
+  if(!startDate || !endDate){
+    alert("Please select both start and end dates.")
+    return
+  }
+
+  console.log("covnerison button clicked")
+
+  const startDateVal = new Date(startDate + "T00:00:00");
+  const endDateVal = new Date(endDate + "T23:59:00");
+  const campaignFilterVal = document.getElementById("campaignFilter").value;
+
+  const filteredData = allParsedLeads.filter((lead) => {
+    const leadDate = new Date(lead["lead date"]);
+    const isDateMatch = leadDate >= startDateVal && leadDate <= endDateVal;
+    const isCampaignNameMatch = campaignFilterVal === "" ? true : lead["campaignname"] === campaignFilterVal;
+
+    return isDateMatch && isCampaignNameMatch;
+  })
+
+  console.log(filteredData);
+
+  fillTheTopPerformingConversion(filteredData);
+
+  conversionBtn.classList.add("active");
+  orderBookedBtn.classList.remove("active");
+  
+
+})
+
+orderBookedBtn.addEventListener("click",()=>{
+
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+ 
+
+  if(!startDate || !endDate){
+    alert("Please select both start and end dates.")
+    return
+  }
+
+
+  console.log("Order button clicked")
+
+  const startDateVal = new Date(startDate + "T00:00:00");
+  const endDateVal = new Date(endDate + "T23:59:00");
+  const campaignFilterVal = document.getElementById("campaignFilter").value;
+
+  
+
+  const filteredData = allParsedLeads.filter((lead) => {
+    const leadDate = new Date(lead["lead date"]);
+    const isDateMatch = leadDate >= startDateVal && leadDate <= endDateVal;
+    const isCampaignNameMatch = campaignFilterVal === "" ? true : lead["campaignname"] === campaignFilterVal;
+
+    return isDateMatch && isCampaignNameMatch;
+  })
+
+  
+
+  fillTheTopPerformingOrder(filteredData);
+
+  conversionBtn.classList.remove("active");
+  orderBookedBtn.classList.add("active");
+  
+
+})
+
+
+
+</script>

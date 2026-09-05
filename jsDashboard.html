@@ -1,0 +1,103 @@
+<script>
+  let campaignNames = null;
+  var allParsedLeads = null;
+  var allDropDownData = null;
+  crmApi.invokeGas("getCampaignName").then(onSuccess).catch((err) => console.error("getCampaignName failed", err))
+  
+
+  function onSuccess(data){
+    allDropDownData = data;
+    // console.log(allDropDownData); 
+    populateCampaignName(allDropDownData.campaignNames);
+    populateAdName(allDropDownData.adNames);
+    populatePlatform(allDropDownData.platforms);
+    populatePlacement(allDropDownData.placements);
+    populateAdSetName(allDropDownData.adSetNames);
+    crmApi.invokeGas("retriveLeadData2").then(allLead).catch((err) => console.error("retriveLeadData2 failed", err));
+}
+
+function allLead(leadDatabase){
+  allParsedLeads = JSON.parse(leadDatabase); 
+  fillTheTable(allParsedLeads);
+  document.getElementById("filteredLeadCount").textContent = allParsedLeads.length;
+  document.getElementById("totalLeadCount").textContent = allParsedLeads.length;
+  document.getElementById('spinnerOverlay').style.opacity = '0';
+  document.getElementById('spinnerOverlay').style.visibility = 'hidden';
+}
+
+function populateCampaignName(campaignName){
+  const dropdown = document.getElementById("campaignName");
+  const options = campaignName.map((name) => `<option value="${name}">${name}</option>`);
+  options.unshift(`<option value="" disabled selected>Select a campaign</option>`);
+  dropdown.innerHTML = options.join(",");
+}
+
+
+function populateAdName(AdName){
+  const dropdown = document.getElementById("adName");
+  const options = AdName.map((name) => `<option value="${name}">${name}</option>`);
+  options.unshift(`<option value="" disabled selected>Select a one</option>`);
+  dropdown.innerHTML = options.join(",");
+}
+
+function populatePlatform(platformName){
+  const dropdown = document.getElementById("platform");
+  const options = platformName.map((name) => `<option value="${name}">${name}</option>`);
+  options.unshift(`<option value="" disabled selected>Select a one</option>`);
+  dropdown.innerHTML = options.join(",");
+}
+
+function populatePlacement(placementName){
+  const dropdown = document.getElementById("placement");
+  const options = placementName.map((name) => `<option value="${name}">${name}</option>`);
+  options.unshift(`<option value="" disabled selected>Select a one</option>`);
+  dropdown.innerHTML = options.join(",");
+}
+
+function populateAdSetName(adSetNames){
+  const dropdown = document.getElementById("adSetName");
+  const options = adSetNames.map((name) => `<option value="${name}">${name}</option>`);
+  options.unshift(`<option value="" disabled selected>Select a one</option>`);
+  dropdown.innerHTML = options.join(",");
+}
+
+function fillTheTable(leads){
+  const tableBody = document.getElementById("dataTableBody");
+
+  const tableContent = leads.map((lead)=> {
+    return `<tr>
+              <td>${new Date(lead["lead date"]).toLocaleDateString("en-GB")}</td>
+              <td>${lead["client name"]}</td>
+              <td>${lead["mobile no"]}</td>
+              <td>${lead["city"]}</td>
+              <td>${lead["town"]}</td>
+              <td>${lead["call type"]}</td>
+              <td>${lead["platform"]}</td>
+              <td>${lead["lead status"]}</td>
+              <td>${lead["rating"]}</td>
+              <td>${lead["assigned to"]}</td>
+              <td>${lead["interested in"]}</td>
+              <td>${lead["follow up date"] === "" ? "" : new Date(lead["follow up date"]).toLocaleDateString("en-GB")}</td>
+              <td>${lead["no of follow ups"]}</td>
+              <td>${lead["consultation booked date"] === "" ? "" : new Date(lead["consultation booked date"]).toLocaleDateString("en-GB")}</td>
+              <td>${lead["consultation visited date"] === "" ? "" : new Date(lead["consultation visited date"]).toLocaleDateString("en-GB")}</td>
+              <td>${lead["consultation type"]}</td>
+              <td class="initial-remark">${lead["initial remark"]}</td>
+              <td>${lead["detail comment"]}</td>
+              <td>${lead["how did you hear about us?"]}</td>
+              <td>${lead["campaignname"]}</td>
+              <td>${lead["adsetname"]}</td>
+              <td>${lead["adname"]}</td>
+              <td>${lead["campaignsource"]}</td>
+              <td>${lead["placement"]}</td>
+            </tr>`;
+  }).join("");
+  // console.log(tableContent);
+  tableBody.innerHTML = tableContent;
+}
+
+// console.log(allParsedLeads);
+
+
+</script>
+

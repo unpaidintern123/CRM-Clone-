@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ads Campaign Insights - American Hairline CRM</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    :root {
+      --primary-color: #4a69bd;
+      --primary-dark: #3b5998;
+      --secondary-color: #2c3e50;
+      --accent-color: #3498db;
+      --success-color: #2e7d32;
+      --warning-color: #e65100;
+      --info-color: #1565c0;
+      --background-color: #f8fafc;
+      --card-background: #ffffff;
+      --border-color: #e2e8f0;
+      --text-primary: #1a202c;
+      --text-secondary: #4a5568;
+      --text-muted: #718096;
+      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--background-color);
+      color: var(--text-primary);
+      font-weight: 400;
+      line-height: 1.6;
+      letter-spacing: -0.01em;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: linear-gradient(180deg, var(--secondary-color) 0%, #34495e 100%);
+      color: white;
+      padding: 0;
+      height: 100%;
+      overflow-y: auto;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-lg);
+      z-index: 100;
+    }
+
+    .sidebar-header {
+      padding: 24px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .sidebar-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: white;
+    }
+
+    .sidebar-toggle {
+      margin-right: 12px;
+      font-size: 20px;
+      cursor: pointer;
+      color: white;
+      background: none;
+      border: none;
+      padding: 8px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-toggle:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-links {
+      padding: 24px 0;
+      transition: opacity 0.3s;
+    }
+
+    .nav-links a {
+      display: flex;
+      align-items: center;
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+      letter-spacing: -0.01em;
+    }
+
+    .nav-links a:hover {
+      color: white;
+      background: rgba(255, 255, 255, 0.08);
+      border-left-color: var(--accent-color);
+    }
+
+    .nav-links a.active {
+      color: white;
+      background: rgba(74, 105, 189, 0.2);
+      border-left-color: var(--accent-color);
+      font-weight: 600;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .user-icon {
+      position: absolute;
+      top: 16px;
+      right: 24px;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      color: white;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: 600;
+      z-index: 100;
+      box-shadow: var(--shadow-lg);
+      border: 3px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .user-icon:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-xl);
+    }
+
+    .app-header {
+      padding: 24px 28px;
+      background: var(--card-background);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .app-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .dashboard-container {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+      background-color: var(--background-color);
+    }
+
+    .filters-section {
+      background: var(--card-background);
+      border-radius: 12px;
+      box-shadow: var(--shadow-md);
+      padding: 32px;
+      margin-bottom: 32px;
+      border: 1px solid var(--border-color);
+    }
+
+    .filters-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border-color);
+      letter-spacing: -0.02em;
+    }
+
+    .filters-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .filter-group label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .filter-group input,
+    .filter-group select {
+      padding: 12px 16px;
+      font-size: 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--card-background);
+      transition: all 0.3s ease;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .filter-group input:focus,
+    .filter-group select:focus {
+      border-color: var(--primary-color);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(74, 105, 189, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .date-range {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .date-separator {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .action-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .btn-search,
+    .btn-reset {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      letter-spacing: -0.01em;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-search {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      color: white;
+    }
+
+    .btn-search:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-reset {
+      background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+      color: white;
+    }
+
+    .btn-reset:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .insights-tabs {
+      background: var(--card-background);
+      border-radius: 12px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .tab-header {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      background: #f8fafc;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 18px 24px;
+      border: none;
+      background: none;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      letter-spacing: -0.01em;
+    }
+
+    .tab-btn::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--primary-color);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .tab-btn.active {
+      color: var(--primary-color);
+      background: var(--card-background);
+      font-weight: 700;
+    }
+
+    .tab-btn.active::after {
+      transform: scaleX(1);
+    }
+
+    .tab-btn:hover:not(.active) {
+      background: rgba(74, 105, 189, 0.05);
+      color: var(--primary-color);
+    }
+
+    .tab-content {
+      display: none;
+      padding: 0;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .insights-table-container {
+      overflow-x: auto;
+      max-height: 600px;
+    }
+
+    .insights-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 900px;
+    }
+
+    .insights-table th {
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+      color: white;
+      padding: 18px 16px;
+      position: sticky;
+      top: 0;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      text-align: left;
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .insights-table th:last-child {
+      border-right: none;
+    }
+
+    .insights-table tbody tr {
+      transition: all 0.2s ease;
+    }
+
+    .insights-table tbody tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+
+    .insights-table tbody tr:hover {
+      background-color: rgba(74, 105, 189, 0.05);
+      transform: scale(1.01);
+    }
+
+    .insights-table td {
+      padding: 16px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .insights-table td:first-child {
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .metric-consultation-booked {
+      color: var(--info-color);
+      font-weight: 700;
+    }
+
+    .metric-consultation-visited {
+      color: var(--warning-color);
+      font-weight: 700;
+    }
+
+    .metric-order-booked {
+      color: var(--success-color);
+      font-weight: 700;
+    }
+
+    .metric-conversion {
+      background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+      border: 1px solid #ce93d8;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: 700;
+      color: #6a1b9a;
+      font-size: 13px;
+    }
+
+    .sidebar.collapsed {
+      width: 70px;
+    }
+
+    .sidebar.collapsed .sidebar-header h2,
+    .sidebar.collapsed .nav-links a {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Loading spinner styles */
+    .spinner-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: all 0.3s ease;
+    }
+
+    .spinner-container {
+      text-align: center;
+      animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .spinner-bars {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      margin: 0 auto 24px;
+    }
+
+    .bar {
+      width: 8px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+      border-radius: 4px;
+      animation: stretchdelay 1.4s infinite ease-in-out;
+    }
+
+    .bar:nth-child(1) { animation-delay: -1.1s; }
+    .bar:nth-child(2) { animation-delay: -1.0s; }
+    .bar:nth-child(3) { animation-delay: -0.9s; }
+    .bar:nth-child(4) { animation-delay: -0.8s; }
+    .bar:nth-child(5) { animation-delay: -0.7s; }
+
+    .loading-text {
+      color: var(--text-secondary);
+      font-size: 16px;
+      font-weight: 600;
+      animation: textFade 2s ease-in-out infinite;
+      letter-spacing: -0.01em;
+    }
+
+    @keyframes stretchdelay {
+      0%, 40%, 100% {
+        transform: scaleY(0.4);
+      }
+      20% {
+        transform: scaleY(1);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes textFade {
+      0%, 100% {
+        opacity: 0.6;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    .top-performing-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 32px;
+      margin-bottom: 40px;
+      padding: 24px 0;
+      animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .top-performing-card {
+      background: var(--card-background);
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-color);
+      border-top: 4px solid var(--primary-color);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .top-performing-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-xl);
+    }
+
+    .top-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .top-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .top-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border-color);
+      transition: all 0.2s ease;
+    }
+
+    .top-item:last-child {
+      border-bottom: none;
+    }
+
+    .top-item:hover {
+      background-color: rgba(74, 105, 189, 0.05);
+      padding-left: 8px;
+      border-radius: 8px;
+    }
+
+    .top-rank {
+      font-weight: 700;
+      color: var(--primary-color);
+      font-size: 16px;
+      margin-right: 16px;
+      width: 28px;
+      text-align: center;
+    }
+
+    .top-name {
+      flex: 1;
+      color: var(--text-primary);
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .top-score {
+      font-weight: 700;
+      color: var(--success-color);
+      font-size: 14px;
+      padding: 4px 8px;
+      background: rgba(46, 125, 50, 0.1);
+      border-radius: 6px;
+    }
+
+    .performance-toggle-wrapper {
+      display: flex;
+      justify-content: center;
+      margin: 40px 0 24px;
+      animation: fadeInScale 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .performance-toggle {
+      background: var(--card-background);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      padding: 8px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-color);
+    }
+
+    .toggle-label {
+      color: var(--text-secondary);
+      margin: 0 8px 0 12px;
+      font-weight: 500;
+    }
+
+    .toggle-option {
+      background: none;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      letter-spacing: -0.01em;
+    }
+
+    .toggle-option:hover {
+      background-color: rgba(74, 105, 189, 0.1);
+      color: var(--primary-color);
+    }
+
+    .toggle-option.active {
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+      color: white;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .divider {
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    @keyframes fadeInScale {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-container {
+        padding: 24px;
+      }
+      
+      .filters-section {
+        padding: 24px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        left: -240px;
+        z-index: 1000;
+      }
+      
+      .sidebar.open {
+        left: 0;
+      }
+      
+      .filters-row {
+        grid-template-columns: 1fr;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .dashboard-container {
+        padding: 16px;
+      }
+      
+      .app-header {
+        padding: 16px 20px;
+      }
+      
+      .app-title {
+        font-size: 20px;
+      }
+      
+      .user-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+    <div class="spinner-overlay" id="spinnerOverlay">
+        <div class="spinner-container">
+            <div class="spinner-bars">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+            <div class="loading-text">Loading insights...</div>
+        </div>
+    </div>
+
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <button class="sidebar-toggle">≡</button>
+      <h2>CRM</h2>
+    </div>
+    <div class="nav-links">
+      <a href="#">All Leads</a>
+      <a href="#">Upload Lead</a>
+      <a href="#">Ads Dashboard</a>
+      <a href="#" class="active">Campaign Insights</a>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="user-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#FFFFFF" viewBox="0 0 24 24">
+        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-3.31 0-6 2.69-6 6v2h12v-2c0-3.31-2.69-6-6-6z"/>
+      </svg>
+    </div>
+
+    <div class="app-header">
+      <div class="app-title">American Hairline CRM - Ads Campaign Insights</div>
+    </div>
+
+    <div class="dashboard-container">
+      <div class="filters-section">
+        <div class="filters-title">Filters</div>
+        <div class="filters-row">
+          <div class="filter-group">
+            <label>Date Range</label>
+            <div class="date-range">
+              <input type="date" id="startDate">
+              <span class="date-separator">to</span>
+              <input type="date" id="endDate">
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <label for="campaignFilter">Campaign Name</label>
+            <select id="campaignFilter">
+              <option value="">All Campaigns</option>
+              <option value="Summer Hair Campaign 2024">Summer Hair Campaign 2024</option>
+              <option value="Premium Hair Transplant">Premium Hair Transplant</option>
+              <option value="Winter Special Offers">Winter Special Offers</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn-search" id="searchBtn">Generate Insights</button>
+          <button class="btn-reset" id="resetBtn">Reset Filters</button>
+        </div>
+      </div>
+
+      <div class="insights-tabs">
+        <div class="tab-header">
+          <button class="tab-btn active" data-tab="ads">Ad Names</button>
+          <button class="tab-btn" data-tab="adsets">AdSet Names</button>
+          <button class="tab-btn" data-tab="placements">Placements</button>
+          <button class="tab-btn" data-tab="platforms">Platforms</button>
+        </div>
+
+        <div class="tab-content active" id="ads">
+          <div class="insights-table-container">
+            <table class="insights-table">
+              <thead>
+                <tr>
+                  <th>Ad Name</th>
+                  <th>Total Leads</th>
+                  <th>Consultations Booked</th>
+                  <th>Consultations Visited</th>
+                  <th>Order Booked</th>
+                  <th>Conversion Rate (%)</th>
+                </tr>
+              </thead>
+              <tbody id="adNames">
+                
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-content" id="adsets">
+          <div class="insights-table-container">
+            <table class="insights-table">
+              <thead>
+                <tr>
+                  <th>AdSet Name</th>
+                  <th>Total Leads</th>
+                  <th>Consultations Booked</th>
+                  <th>Consultations Visited</th>
+                  <th>Order Booked</th>
+                  <th>Conversion Rate (%)</th>
+                </tr>
+              </thead>
+              <tbody id="adSetNames">
+                
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-content" id="placements">
+          <div class="insights-table-container">
+            <table class="insights-table">
+              <thead>
+                <tr>
+                  <th>Placement</th>
+                  <th>Total Leads</th>
+                  <th>Consultations Booked</th>
+                  <th>Consultations Visited</th>
+                  <th>Order Booked</th>
+                  <th>Conversion Rate (%)</th>
+                </tr>
+              </thead>
+              <tbody id="placement">
+               
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-content" id="platforms">
+          <div class="insights-table-container">
+            <table class="insights-table">
+              <thead>
+                <tr>
+                  <th>Platform</th>
+                  <th>Total Leads</th>
+                  <th>Consultations Booked</th>
+                  <th>Consultations Visited</th>
+                  <th>Order Booked</th>
+                  <th>Conversion Rate (%)</th>
+                </tr>
+              </thead>
+              <tbody id="platform">
+               
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+        <div class="performance-toggle-wrapper">
+          <div class="performance-toggle">
+            <span class="toggle-label">Based on:</span>
+            <button class="toggle-option active" id="switchConversion">Conversion Ratio</button>
+            <span class="divider">/</span>
+            <button class="toggle-option" id="switchOrders">Order Booked</button>
+          </div>
+        </div>
+
+        <div class="top-performing-container">
+          <div class="top-performing-card">
+            <h3 class="top-title">Top Performing Ad Names</h3>
+            <ul class="top-list" id="topAdNames">
+              
+            </ul>
+          </div>
+
+          <div class="top-performing-card">
+            <h3 class="top-title">Top Performing AdSet Names</h3>
+            <ul class="top-list" id="topAdSetNames">
+              
+            </ul>
+          </div>
+        </div>
+
+    </div>
+  </div>
+
+  <script>
+    const toggleBtn = document.querySelector('.sidebar-toggle')
+    const sidebar = document.querySelector('.sidebar')
+
+    sidebar.classList.add('collapsed')
+
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed')
+    })
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'))
+        btn.classList.add('active')
+        document.getElementById(btn.getAttribute('data-tab')).classList.add('active')
+      })
+    })
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      document.getElementById('startDate').value = ''
+      document.getElementById('endDate').value = ''
+      document.getElementById('campaignFilter').selectedIndex = 0
+      document.getElementById("adNames").innerHTML = "";
+      document.getElementById("adSetNames").innerHTML = "";
+      document.getElementById("placement").innerHTML = "";
+      document.getElementById("platform").innerHTML = "";
+      document.getElementById("topAdNames").innerHTML = "";
+      document.getElementById("topAdSetNames").innerHTML = "";
+    })
+
+    // Enhanced interactions
+    document.querySelectorAll('.toggle-option').forEach(option => {
+      option.addEventListener('click', () => {
+        document.querySelectorAll('.toggle-option').forEach(opt => opt.classList.remove('active'))
+        option.classList.add('active')
+      })
+    })
+
+    // Mobile sidebar toggle
+    if (window.innerWidth <= 768) {
+      toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('open')
+      })
+    }
+  </script>
+  <script>
+  window.CRM_USE_API_PROXY = "<?= CRM_USE_API_PROXY ?>";
+</script>
+<?!= HtmlService.createHtmlOutputFromFile("apiClient").getContent() ?>
+  <?!= HtmlService.createHtmlOutputFromFile("insightJS").getContent() ?>
+</body>
+</html>

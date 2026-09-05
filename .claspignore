@@ -1,0 +1,17 @@
+# Ignore everything by default
+**/**
+
+# Allow only Apps Script project files in root
+!appsscript.json
+!*.gs
+!*.js
+!*.html
+
+# Never push secrets/backends/data
+firebase-backend/**
+*.xlsx
+*firebase-adminsdk*.json
+package-lock.json
+
+
+  // "scriptId": "1Zr1s69u92g-srlMGrWZoierquigb2EN30ufnmpP4o-MutegvjPYny81Y",

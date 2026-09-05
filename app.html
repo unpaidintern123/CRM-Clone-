@@ -1,0 +1,1026 @@
+<script>
+
+var allLeadData = null;
+
+// window.addEventListener('load', function() {
+//   document.getElementById('loadingSpinner').style.display = 'block';
+// })
+
+
+// Nav Bar Toggle 
+
+const toggleBtn = document.querySelector('.sidebar-toggle');
+const sidebar = document.querySelector('.sidebar');
+
+// Collapse sidebar by default when page loads
+sidebar.classList.add('collapsed');
+
+toggleBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+    console.log('Sidebar toggled:', sidebar.classList.contains('collapsed') ? 'Collapsed' : 'Expanded');
+});
+
+// Date and time function 
+
+function formatDate(input) {
+  const date = new Date(input);
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  return `${date.getDate().toString().padStart(2, '0')} ${
+           months[date.getMonth()]
+         } ${date.getFullYear()} ${
+           date.getHours().toString().padStart(2, '0')}:${
+           date.getMinutes().toString().padStart(2, '0')}:${
+           date.getSeconds().toString().padStart(2, '0')}`;
+}
+
+// Populate Form Function 
+
+function populateLeadForm(lead){
+  //Set Lead Date
+  const leadDate = document.getElementById("leadDate");
+  leadDate.value = (() => { 
+  let d = new Date(lead["lead date"]); 
+  return isNaN(d) ? '' : toLocalISOString(d); 
+})();
+
+  if(lead["preferred time to call"]){
+    document.querySelector(".preferred-time-badge").style.display = 'flex';
+    document.getElementById("preferredCallTime").textContent = lead["preferred time to call"]
+  }else{
+    document.querySelector(".preferred-time-badge").style.display = 'none';
+  }
+
+  //Set Lead Unqiue ID
+  const leadUniqueId = document.getElementById("leadUniqueId");
+  leadUniqueId.value = lead["lead unique id"] || "";
+
+  //Set Assigned To
+  const assignedTo = document.getElementById("assignedTo")
+  assignedTo.value = lead["assigned to"] || "";
+
+  //Set Client Name
+  const clientName = document.getElementById("clientName");
+  clientName.value = lead["client name"] || "";
+
+  //Set Contact number
+  const mobileNo = document.getElementById("mobileNo");
+  mobileNo.value = lead["mobile no"] || "";
+
+  const secondaryMobileNo = document.getElementById("secondaryMobileNo");
+  secondaryMobileNo.value = lead["secondary mobile no"] || ""
+
+  //Set City
+  const cityValue = lead["city"];
+  if (["Mumbai", "Delhi", "Bangalore"].includes(cityValue) || cityValue === "") {
+    cityDropdown.classList.remove("hide");
+    cityDropdown.setAttribute("required","true");
+    cityDropdown.value = cityValue || "";
+    cityInput.classList.add("hide");
+    cityInput.removeAttribute("required");
+    cityInput.value = cityValue || "";
+  } else {
+    cityDropdown.classList.add("hide");
+    cityDropdown.removeAttribute("required");
+    cityDropdown.value = "Others";
+    cityInput.classList.remove("hide");
+    cityInput.setAttribute("required","true");
+    cityInput.value = cityValue || "";
+  }
+
+  //Set Town
+  const town = document.getElementById("town");
+  town.value = lead["town"] || "";
+
+  const consultationMode = document.getElementById("consultationMode");
+  consultationMode.value = lead["client preference consultation mode"] || ""
+
+  //Set Call type 
+const incoming = document.getElementById("incoming");
+const outgoing = document.getElementById("outgoing");
+
+if (lead["call type"] === "Incoming") {
+  incoming.checked = true;
+} else {
+  outgoing.checked = true;
+}
+
+  //Set Platform
+  const platform = document.getElementById("platform");
+  platform.value = lead["platform"] || "";
+
+  //Set Interest In
+  const interestedIn = document.getElementById("interestedIn");
+  interestedIn.value = lead["interested in"] || "";
+
+  //Set Rating 
+  const rating = document.getElementById("rating");
+  rating.value = lead["rating"] || "";
+
+  //Set lead status
+  const leadStatus = document.getElementById("leadStatus");
+  leadStatus.value = lead["lead status"] || "";
+
+  //Set Follow Up Date 
+  
+  const followUpDate = document.getElementById("followUpDate");
+  followUpDate.value = (() => { 
+  let d = new Date(lead["follow up date"]); 
+  return isNaN(d) ? '' : toLocalISOString(d); 
+})();
+
+
+  //Set No of follow ups
+  const noOfFollowups = document.getElementById("noOfFollowups");
+  noOfFollowups.value = lead["no of follow ups"] || "";
+
+  //Set Consultation booked Date
+
+  const consutlationBookedDate = document.getElementById("consutlationBookedDate");
+  consutlationBookedDate.value = (() => { 
+  let d = new Date(lead["consultation booked date"]); 
+  return isNaN(d) ? '' : toLocalISOString(d); 
+})();
+
+  //Set Consultation Type
+  const consultationType = document.getElementById("consultationType");
+  consultationType.value = lead["consultation type"] || "";
+
+  //Set Consultation Status
+  const consultStatus = document.getElementById("consultationStatus");
+  consultationStatus.value = lead["consultation status"] || "";
+
+  //Set Consultation visited Date
+
+  const consutlationVisitedDate = document.getElementById("consutlationVisitedDate");
+  consutlationVisitedDate.value =   (() => { 
+  let d = new Date(lead["consultation visited date"]); 
+  return isNaN(d) ? '' : toLocalDateOnlyString(d); 
+})() ;
+
+  const hearAboutUs = document.getElementById("hearAboutUs");
+  hearAboutUs.value = lead["how did you hear about us?"] || "";
+
+
+  //Set Initial Remark
+  const initialRemark = document.getElementById("initialRemark");
+  initialRemark.value = lead["initial remark"] || "";
+
+  //Set Detailed Remark
+  const detailComment = document.getElementById("detailComment");
+  detailComment.value = lead["detail comment"] || "";
+
+  // Set Optional questions
+      document.getElementById("Q1").value = lead["how soon are you looking for solution?"] || "";
+      document.getElementById("Q2").value = lead["do you have a budget in mind?"] || "";
+      document.getElementById("Q3").value = lead["willing to visit to the center?"] || "";
+      // document.getElementById("Q4").value = lead["hair fall since?"] || "";
+      // document.getElementById("Q5").value = lead["done hair transplant before?"] || "";
+      // document.getElementById("Q6").value = lead["gotten a hair system before?"] || "";
+
+
+  //Reset Post consultation Form
+
+  resetPostConsultationForm();
+
+  //Set Order Status
+  const orderBooked = document.getElementById("orderBooked");
+  const orderNotBooked = document.getElementById("orderNotBooked");
+
+  const orderStatusValue = lead["order booked status"]
+  //Set Order Status Radio Button
+  if(orderStatusValue === "Booked"){
+    orderBooked.checked = true;
+    orderNotBooked.checked = false;
+  }else if(orderStatusValue === "Not Booked"){
+    orderBooked.checked = false;
+    orderNotBooked.checked = true;
+  }else{
+    orderBooked.checked = false;
+    orderNotBooked.checked = false;
+  }
+
+  //Calling change Event When Order status is booked or not Booked to show/hide Conditional Fields
+  if (orderBooked.checked || orderNotBooked.checked) {
+    const checkedRadio = orderBooked.checked ? orderBooked : orderNotBooked;
+    checkedRadio.dispatchEvent(new Event('change'));
+  }
+
+  //Set Order Date
+
+  const orderDate = document.getElementById("orderDate");
+  orderDate.value =   (() => { 
+  let d = new Date(lead["order date"]); 
+  return isNaN(d) ? '' : toLocalDateOnlyString(d); 
+})() ;  
+
+  document.getElementById("totalSalesAmount").value = lead["sales amount"] || "";
+  document.getElementById("notBookedFeedback").value = lead["not booked feedback"] || "";
+
+
+  leadStatusDropdown.dispatchEvent(new Event("change"));
+
+  } 
+
+
+
+// Change Dates from UTC to IST
+
+function toLocalISOString(date) {
+  if (!(date instanceof Date) || isNaN(date)) return "";
+
+  const offsetInMinutes = date.getTimezoneOffset(); // For IST, this will be -330
+  const localDate = new Date(date.getTime() - offsetInMinutes * 60000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function toLocalDateOnlyString(date) {
+  if (!(date instanceof Date) || isNaN(date)) return "";
+
+  const offsetInMinutes = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - offsetInMinutes * 60000);
+
+  const day = String(localDate.getDate()).padStart(2, '0');
+  const month = String(localDate.getMonth() + 1).padStart(2, '0');
+  const year = localDate.getFullYear();
+
+  return `${year}-${month}-${day}`;
+}
+
+
+// Update lead-list-container ( Lead Card ) //follow //booked //lost //new
+
+crmApi.invokeGas("retriveLeadData")
+  .then(retriveLeadSuccess)
+  .catch((err) => console.error("retriveLeadData failed", err));
+
+function retriveLeadSuccess(userData) {
+  allLeadData = JSON.parse(userData);
+  makeLeadCard(allLeadData.filter( lead => lead["lead status"] == "New Lead" && lead["assigned to"] === loggedUser.username));
+  const span = newLeadBtn.querySelector(".count");
+  span.textContent = allLeadData.filter( lead => lead["lead status"] == "New Lead" && lead["assigned to"] === loggedUser.username).length;
+  updateStageCounts()
+  const firstLeadCard = document.querySelector('.lead-card');
+  if (firstLeadCard) {
+  firstLeadCard.click();
+  }
+  document.getElementById('spinnerOverlay').style.opacity = '0';
+  document.getElementById('spinnerOverlay').style.visibility = 'hidden';
+
+            //   opacity: 0;
+            // visibility: hidden;
+}
+
+
+
+const loggedUser = JSON.parse(localStorage.getItem("loggedInUser"));
+console.log(loggedUser);
+document.getElementById("dialog-username").textContent = loggedUser.username;
+document.getElementById("dialog-permission").textContent = loggedUser.permission;
+
+function makeLeadCard(filteredData) {
+  const leadListContainer = document.querySelector(".lead-list-container");
+  
+   if (filteredData === null || filteredData.length === 0) {
+    leadListContainer.innerHTML = "<div class='no-lead-selected'>No leads found for this filter.</div>";
+    return;
+  }
+
+// Function to get the relevent Lead Date
+
+function getRelevantDate(lead) {
+  return (
+    lead["lead status"] === "New Lead" ? lead["lead date"] :
+    ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"].includes(lead["lead status"]) ? lead["follow up date"] :
+    ["Lost", "Dead","Not Visited Lost"].includes(lead["lead status"]) ? lead["follow up date"] :
+    lead["lead status"] === "Consultation Booked" ? lead["consultation booked date"] :
+    lead["consultation visited date"]
+  );
+}
+
+
+ // ✅ Sort by lead date descending (latest first)
+
+const isFollowUpStage = ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"]
+  .includes(filteredData[0]["lead status"]);
+
+const isConsultationStage = ["Consultation Booked", "Consultation Visited"]
+  .includes(filteredData[0]["lead status"]);
+
+const isNewOrLostStage = ["New Lead", "Lost", "Dead","Not Visited Lost"].includes(filteredData[0]["lead status"]);
+
+if (isNewOrLostStage) {
+  filteredData.sort((a, b) => new Date(getRelevantDate(b)) - new Date(getRelevantDate(a)));
+}
+
+if (isFollowUpStage || isConsultationStage) {
+  filteredData.sort((a, b) => new Date(getRelevantDate(a)) - new Date(getRelevantDate(b)));
+}
+
+  const dataForCard = filteredData.map((lead,index) => {
+    const phone = String(lead["mobile no"]).length === 10 
+      ? "+91 " + lead["mobile no"] 
+      : "+" + lead["mobile no"];
+
+    const location = lead.town === "" 
+      ? lead.city 
+      : `${lead.city}, ${lead.town}`;
+
+    const label = (
+      lead["lead status"] === "New Lead" ? "Added: " :
+      ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"].includes(lead["lead status"]) ? "Follow Up: " :
+      ["Lost", "Dead","Not Visited Lost"].includes(lead["lead status"]) ? "Last Contact: " : 
+      lead["lead status"] === "Consultation Booked" ? "Consultation Booked Date: " : "Consultation Visited Date: "
+    );
+
+    const statusClass = (
+      lead["lead status"] === "New Lead" ? "new" :
+      ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"].includes(lead["lead status"]) ? "follow" :
+      ["Lost", "Dead","Not Visited Lost"].includes(lead["lead status"]) ? "lost" :
+      lead["lead status"] === "Consultation Booked" ? "booked" : "visited"
+    );
+
+    const dateForLead = getRelevantDate(lead);
+
+    return `
+      <div class="lead-card" data-index="${index}" data-id="${lead["lead unique id"]}">
+        <h3>${lead["client name"]}</h3>
+        <div class="lead-info">${phone}</div>
+        <div class="lead-info">${location}</div>
+        <div class="lead-info">${label}${formatDate(dateForLead)}</div>
+        <span class="lead-status ${statusClass}">${lead["lead status"]}</span>
+      </div>
+    `;
+  }).join("");
+
+  leadListContainer.innerHTML = dataForCard;
+  
+  // Add click event listeners to each lead card
+  const leadCards = leadListContainer.querySelectorAll(".lead-card");
+  leadCards.forEach(card => {
+    card.addEventListener("click", function() {
+      // Remove active class from all cards
+      leadCards.forEach(c => c.classList.remove("active"));
+      
+      // Add active class to clicked card
+      this.classList.add("active");
+      
+      // Get the index of the lead from the data-index attribute
+      const leadIndex = parseInt(this.getAttribute("data-index"));
+      
+      // Populate form with the selected lead's data
+      populateLeadForm(filteredData[leadIndex]);
+    });
+  });
+
+}
+
+
+//All lead Button
+const contactFilterGroup = document.getElementById("contactNoFilter").closest(".filter-group");
+const allBtn = document.querySelector(".all-stage");
+
+allBtn.addEventListener("click",()=>{
+  makeLeadCard(allLeadData.filter(lead => lead["assigned to"] === loggedUser.username));
+  contactFilterGroup.classList.remove("hide");
+  allBtn.classList.add("active");
+  newLeadBtn.classList.remove("active");
+  followupBtn.classList.remove("active");
+  consultationBtn.classList.remove("active");
+  statusFilterGroup.classList.add("hide");
+  dateFilterGroup.classList.add("hide");
+  startDateGroup.classList.add("hide");
+  endDateGroup.classList.add("hide");
+  lostBtn.classList.remove("active");
+  consultationVisitedBtn.classList.remove("active");
+  allBtn.querySelector(".count").textContent = allLeadData.filter(lead => lead["assigned to"] === loggedUser.username).length;
+  const firstLeadCard = document.querySelector('.lead-card');
+  if (firstLeadCard) {
+  firstLeadCard.click();
+  }
+}) 
+
+//New Lead Button
+const statusFilterGroup = document.getElementById("statusFilter").closest(".filter-group");
+const dateFilterGroup = document.getElementById("dateFilter").closest(".filter-group");
+const startDateGroup = document.getElementById("startDate").closest(".filter-group");
+const endDateGroup = document.getElementById("endDate").closest(".filter-group");
+const newLeadBtn = document.querySelector(".new-lead");
+const orderStatusFilterGroup = document.getElementById("orderStatusFilter").closest(".filter-group");
+
+newLeadBtn.addEventListener("click",()=>{
+makeLeadCard(allLeadData.filter( lead => lead["lead status"] == "New Lead" && lead["assigned to"] === loggedUser.username ));
+newLeadBtn.classList.add("active");
+followupBtn.classList.remove("active");
+consultationBtn.classList.remove("active");
+statusFilterGroup.classList.add("hide");
+lostBtn.classList.remove("active");
+consultationVisitedBtn.classList.remove("active");
+allBtn.classList.remove("active");
+contactFilterGroup.classList.add("hide");
+dateFilterGroup.classList.add("hide");
+startDateGroup.classList.remove("hide");
+endDateGroup.classList.remove("hide");
+orderStatusFilterGroup.classList.add("hide");
+const span = newLeadBtn.querySelector(".count");
+span.textContent = allLeadData.filter( lead => lead["lead status"] == "New Lead" && lead["assigned to"] === loggedUser.username).length;
+const firstLeadCard = document.querySelector('.lead-card');
+if (firstLeadCard) {
+firstLeadCard.click();
+}
+})
+
+//Follow up btn
+const followupBtn = document.querySelector(".followup-stage");
+followupBtn.addEventListener("click",()=>{
+
+makeLeadCard(allLeadData.filter( lead => {
+const leadDate = new Date(lead["follow up date"]);
+const todayStartD = new Date(new Date().toISOString().split('T')[0] + "T00:00:00");
+const todayEndD = new Date(new Date().toISOString().split('T')[0] + "T23:59:00");
+const isDateMatch = leadDate >= todayStartD && leadDate <= todayEndD;
+
+return isDateMatch && ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username }));
+
+
+newLeadBtn.classList.remove("active");
+followupBtn.classList.add("active");
+consultationBtn.classList.remove("active");
+lostBtn.classList.remove("active");
+consultationVisitedBtn.classList.remove("active");
+allBtn.classList.remove("active");
+statusFilterGroup.classList.remove("hide");
+contactFilterGroup.classList.add("hide");
+dateFilterGroup.classList.remove("hide");
+startDateGroup.classList.add("hide");
+endDateGroup.classList.add("hide");
+orderStatusFilterGroup.classList.add("hide");
+followupBtn.querySelector(".count").textContent = allLeadData.filter( lead =>{ 
+  const leadDate = new Date(lead["follow up date"]);
+  const todayStartD = new Date(new Date().toISOString().split('T')[0] + "T00:00:00");
+  const todayEndD = new Date(new Date().toISOString().split('T')[0] + "T23:59:00");
+  const isDateMatch = leadDate >= todayStartD && leadDate <= todayEndD;
+
+  return isDateMatch && ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username}).length;
+
+const firstLeadCard = document.querySelector('.lead-card');
+if (firstLeadCard) {
+firstLeadCard.click();
+}
+})
+
+//Consultation Booked 
+const consultationBtn = document.querySelector(".consultation-booked");
+consultationBtn.addEventListener("click",()=>{
+makeLeadCard(allLeadData.filter( lead => ["Consultation Booked"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username));
+newLeadBtn.classList.remove("active");
+followupBtn.classList.remove("active");
+consultationBtn.classList.add("active");
+lostBtn.classList.remove("active");
+consultationVisitedBtn.classList.remove("active");
+allBtn.classList.remove("active");
+statusFilterGroup.classList.add("hide");
+contactFilterGroup.classList.add("hide");
+dateFilterGroup.classList.add("hide");
+startDateGroup.classList.remove("hide");
+endDateGroup.classList.remove("hide");
+orderStatusFilterGroup.classList.add("hide");
+consultationBtn.querySelector(".count").textContent = allLeadData.filter( lead => ["Consultation Booked"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username).length;
+
+const firstLeadCard = document.querySelector('.lead-card');
+if (firstLeadCard) {
+firstLeadCard.click();
+}
+})
+
+//lost
+const lostBtn = document.querySelector(".lost-stage");
+lostBtn.addEventListener("click",()=>{
+makeLeadCard(allLeadData.filter( lead => ["Lost", "Dead","Not Visited Lost"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username));
+newLeadBtn.classList.remove("active");
+followupBtn.classList.remove("active");
+consultationBtn.classList.remove("active");
+lostBtn.classList.add("active");
+consultationVisitedBtn.classList.remove("active");
+allBtn.classList.remove("active");
+statusFilterGroup.classList.add("hide");
+contactFilterGroup.classList.add("hide");
+dateFilterGroup.classList.add("hide");
+startDateGroup.classList.remove("hide");
+endDateGroup.classList.remove("hide");
+orderStatusFilterGroup.classList.add("hide");
+lostBtn.querySelector(".count").textContent = allLeadData.filter( lead => ["Lost", "Dead","Not Visited Lost"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username).length;
+const firstLeadCard = document.querySelector('.lead-card');
+if (firstLeadCard) {
+firstLeadCard.click();
+}
+})
+
+
+//Consultation Visited BTN 
+const consultationVisitedBtn = document.querySelector(".consultation-visited");
+consultationVisitedBtn.addEventListener("click",()=>{
+makeLeadCard(allLeadData.filter( lead => lead["lead status"] === "Consultation Visited" && lead["assigned to"] === loggedUser.username));
+newLeadBtn.classList.remove("active");
+followupBtn.classList.remove("active");
+consultationBtn.classList.remove("active");
+lostBtn.classList.remove("active");
+consultationVisitedBtn.classList.add("active");
+allBtn.classList.remove("active");
+statusFilterGroup.classList.add("hide");
+contactFilterGroup.classList.add("hide");
+dateFilterGroup.classList.add("hide");
+startDateGroup.classList.remove("hide");
+endDateGroup.classList.remove("hide");
+orderStatusFilterGroup.classList.remove("hide");
+consultationVisitedBtn.querySelector(".count").textContent = allLeadData.filter( lead => lead["lead status"] === "Consultation Visited" && lead["assigned to"] === loggedUser.username).length;
+
+const firstLeadCard = document.querySelector('.lead-card');
+if (firstLeadCard) {
+firstLeadCard.click();
+}
+})
+
+
+
+function updateStageCounts() {
+  newLeadBtn.querySelector(".count").textContent =
+    allLeadData.filter(lead => lead["lead status"] === "New Lead" && lead["assigned to"] === loggedUser.username).length;
+
+  followupBtn.querySelector(".count").textContent =
+    allLeadData.filter(lead => {
+const leadDate = new Date(lead["follow up date"]);
+       let isDateMatch = null;
+      const dateFilterVal = document.getElementById("dateFilter").value;
+        if(dateFilterVal === "Today"){
+          const todayStartD = new Date(new Date().toISOString().split('T')[0] + "T00:00:00");
+          const todayEndD = new Date(new Date().toISOString().split('T')[0] + "T23:59:00");
+          isDateMatch = leadDate >= todayStartD && leadDate <= todayEndD;
+          }else if(dateFilterVal === "Past") {
+              const todayStartD = new Date(new Date().toISOString().split('T')[0] + "T00:00:00");
+              const todayEndD = new Date(new Date().toISOString().split('T')[0] + "T23:59:00");
+              isDateMatch = leadDate <= todayStartD;
+          }else {
+              isDateMatch = true;
+          }
+
+      return isDateMatch && ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"]
+        .includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username}).length;
+
+  consultationBtn.querySelector(".count").textContent =
+    allLeadData.filter(lead => lead["lead status"] === "Consultation Booked" && lead["assigned to"] === loggedUser.username).length;
+
+  consultationVisitedBtn.querySelector(".count").textContent =
+    allLeadData.filter(lead => lead["lead status"] === "Consultation Visited" && lead["assigned to"] === loggedUser.username).length;
+
+  lostBtn.querySelector(".count").textContent =
+    allLeadData.filter(lead => ["Lost", "Dead", "Not Visited Lost"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username).length;
+  
+  allBtn.querySelector(".count").textContent =
+  allLeadData.filter(lead => lead["assigned to"] === loggedUser.username).length;
+}
+
+
+//-----------------------------------------------Date Filter Onchange Logic----------------------------------------------------
+
+const dateFilterBtn = document.getElementById("dateFilter");
+dateFilterBtn.addEventListener("change",() => {
+  const dateStatus = dateFilterBtn.value;
+
+  if(dateStatus === "Custom"){
+    startDateGroup.classList.remove("hide");
+    endDateGroup.classList.remove("hide");
+  }else{
+    startDateGroup.classList.add("hide");
+    endDateGroup.classList.add("hide");
+  }
+})
+
+const leadStatusDropdown = document.getElementById("leadStatus");
+const cityGroup = document.getElementById("city").closest(".form-group");
+const townGroup = document.getElementById("town").closest(".form-group");
+const interestedInGroup = document.getElementById("interestedIn").closest(".form-group"); 
+const ratingGroup = document.getElementById("rating").closest(".form-group");
+const initialRemarkGroup = document.getElementById("initialRemark").closest(".form-group");
+const detailedCommentGroup = document.getElementById("detailComment").closest(".form-group");
+const consBookedGroup = document.getElementById("consutlationBookedDate").closest(".form-row");
+const consVistGroup = document.getElementById("consutlationVisitedDate").closest(".form-row");
+const followupGroup = document.getElementById("followUpDate").closest(".form-row");
+const consultationTypeGroup = document.getElementById("consultationType").closest(".form-row");
+const hearAboutUsGroup = document.getElementById("hearAboutUs").closest(".form-row");
+const questionToAskGroup = document.querySelector(".optional-questions");
+
+
+
+leadStatusDropdown.addEventListener("change", () => {
+  const leadStatus = leadStatusDropdown.value;
+
+  // Common logic
+  const cityVal = document.getElementById("city").value;
+  const city = document.getElementById("city");
+  const cityDropdown = document.getElementById("cityDropdown");
+  const interestedIn = document.getElementById("interestedIn");
+  const rating = document.getElementById("rating");
+  const initialRemark = document.getElementById("initialRemark");
+  const detailComment = document.getElementById("detailComment");
+  const followUpDate = document.getElementById("followUpDate");
+  const consutlationBookedDate = document.getElementById("consutlationBookedDate");
+  const consutlationVisitedDate = document.getElementById("consutlationVisitedDate");
+  const consultationType = document.getElementById("consultationType");
+  const hearAboutUs = document.getElementById("hearAboutUs");
+  const urgency = document.getElementById("Q1");
+  const budget = document.getElementById("Q2");
+  const visitPreference = document.getElementById("Q3");
+  const consultTypeStatus = document.getElementById("consultationStatus");
+
+
+
+  // Hide fields
+  consBookedGroup.classList.add("hide");
+  consVistGroup.classList.add("hide");
+  followupGroup.classList.remove("hide");
+  consultationTypeGroup.classList.add("hide");
+
+  // Reset required attributes
+  followUpDate.removeAttribute("required");
+  consutlationBookedDate.removeAttribute("required");
+  consutlationVisitedDate.removeAttribute("required");
+  consultationType.removeAttribute("required");
+  consultTypeStatus.removeAttribute("required");
+
+
+  // Show/hide based on status
+  if (leadStatus === "Consultation Booked") {
+    consBookedGroup.classList.remove("hide");
+    consultationTypeGroup.classList.remove("hide")
+    followupGroup.classList.add("hide");
+    consutlationBookedDate.setAttribute("required", "true");
+    consultationType.setAttribute("required", "true");
+    consultTypeStatus.setAttribute("required", "true");
+  }
+
+  if (leadStatus === "Consultation Visited") {
+    consVistGroup.classList.remove("hide");
+    followupGroup.classList.add("hide");
+    consutlationVisitedDate.setAttribute("required", "true");
+
+  }
+
+  if(leadStatus === "Lost" || leadStatus === "Not Visited Lost"){
+    console.log("Inside Lost")
+    followupGroup.classList.add("hide");
+  }
+
+  if (["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead"].includes(leadStatus)) {
+    followupGroup.classList.remove("hide");
+    followUpDate.setAttribute("required", "true");
+  }
+
+  if(leadStatus === "New Lead"){
+    followupGroup.classList.remove("hide");
+    followUpDate.setAttribute("required", "true");
+  }
+
+
+  // Ringing / Busy minimal form
+  if (leadStatus === "Ringing / Busy") {
+    cityGroup.classList.add("hide");
+    interestedInGroup.classList.add("hide");
+    ratingGroup.classList.add("hide");
+    initialRemarkGroup.classList.add("hide");
+    detailedCommentGroup.classList.add("hide");
+    cityDropdown.removeAttribute("required");
+    city.removeAttribute("required");
+    interestedIn.removeAttribute("required");
+    rating.removeAttribute("required");
+    initialRemark.removeAttribute("required");
+    detailComment.removeAttribute("required");
+    hearAboutUsGroup.classList.add("hide");
+    hearAboutUs.removeAttribute("required");
+    followupGroup.classList.remove("hide");
+    followUpDate.setAttribute("required", "true");
+    questionToAskGroup.classList.add("hide");
+    urgency.removeAttribute("required");
+    budget.removeAttribute("required");
+    visitPreference.removeAttribute("required");
+  } else if(leadStatus === "Not Reachable"){
+    cityGroup.classList.add("hide");
+    interestedInGroup.classList.add("hide");
+    ratingGroup.classList.add("hide");
+    initialRemarkGroup.classList.remove("hide");
+    detailedCommentGroup.classList.remove("hide");
+    cityDropdown.removeAttribute("required");
+    city.removeAttribute("required");
+    interestedIn.removeAttribute("required");
+    rating.removeAttribute("required");
+    initialRemark.removeAttribute("required");
+    detailComment.removeAttribute("required");
+    hearAboutUsGroup.classList.add("hide");
+    hearAboutUs.removeAttribute("required");
+    followupGroup.classList.remove("hide");
+    followUpDate.setAttribute("required", "true");
+    questionToAskGroup.classList.add("hide");
+    urgency.removeAttribute("required");
+    budget.removeAttribute("required");
+    visitPreference.removeAttribute("required");
+  } else if(leadStatus === "Dead"){
+    console.log("inside Dead")
+    cityGroup.classList.add("hide");
+    interestedInGroup.classList.add("hide");
+    ratingGroup.classList.add("hide");
+    initialRemarkGroup.classList.add("hide");
+    detailedCommentGroup.classList.add("hide");
+    cityDropdown.removeAttribute("required");
+    city.removeAttribute("required");
+    interestedIn.removeAttribute("required");
+    rating.removeAttribute("required");
+    initialRemark.removeAttribute("required");
+    detailComment.removeAttribute("required");
+    hearAboutUsGroup.classList.add("hide");
+    hearAboutUs.removeAttribute("required");
+    followupGroup.classList.add("hide");
+    questionToAskGroup.classList.add("hide");
+    urgency.removeAttribute("required");
+    budget.removeAttribute("required");
+    visitPreference.removeAttribute("required");
+  } else {
+    cityGroup.classList.remove("hide");
+    interestedInGroup.classList.remove("hide");
+    ratingGroup.classList.remove("hide");
+    initialRemarkGroup.classList.remove("hide");
+    detailedCommentGroup.classList.remove("hide");
+
+    if(["Mumbai", "Delhi", "Bangalore"].includes(cityVal) || cityVal === ""){
+      city.removeAttribute("required");
+      cityDropdown.setAttribute("required","true");
+    }else{
+    city.setAttribute("required", "true");
+    }
+    interestedIn.setAttribute("required", "true");
+    rating.setAttribute("required", "true");
+    initialRemark.setAttribute("required", "true");
+    detailComment.setAttribute("required", "true");
+    hearAboutUsGroup.classList.remove("hide");
+    hearAboutUs.setAttribute("required","true");
+    questionToAskGroup.classList.remove("hide");
+    urgency.setAttribute("required", "true");
+    budget.setAttribute("required", "true");
+    visitPreference.setAttribute("required", "true");
+  }
+});
+
+
+window.addEventListener('load', function() {
+  setTimeout(() => {
+    const firstLeadCard = document.querySelector('.lead-card');
+    if (firstLeadCard) {
+      firstLeadCard.click();
+    }
+  }, 500); // Small delay to ensure DOM is fully loaded
+});
+
+
+//--------------------------------------------------User Button Code----------------------------------------------------------
+
+   // Enhanced JavaScript with professional interactions
+        const userIcon = document.querySelector('.user-icon');
+        const userDialog = document.querySelector('.user-dialog');
+        const closeBtn = document.querySelector('.close-btn');
+        const dialogBackdrop = document.querySelector('.dialog-backdrop');
+        const logoutBtn = document.querySelector('.logout-btn');
+
+        // Open dialog with enhanced animation
+        userIcon.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userDialog.classList.add('show');
+            dialogBackdrop.classList.add('show');
+            
+            // Add slight delay for smoother animation
+            setTimeout(() => {
+                userDialog.style.animation = 'none';
+            }, 600);
+        });
+
+        // Close dialog functions
+        function closeDialog() {
+            userDialog.classList.remove('show');
+            dialogBackdrop.classList.remove('show');
+        }
+
+        closeBtn.addEventListener('click', closeDialog);
+        dialogBackdrop.addEventListener('click', closeDialog);
+
+        // Enhanced keyboard support
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && userDialog.classList.contains('show')) {
+                closeDialog();
+            }
+        });
+
+        // Prevent dialog from closing when clicking inside it
+        userDialog.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        // Professional logout button interaction
+        logoutBtn.addEventListener('click', function() {
+            // Add your logout logic here
+            console.log('Logout clicked');
+            closeDialog();
+        });
+
+        // Enhanced touch support for mobile
+        let touchStartY = 0;
+        userDialog.addEventListener('touchstart', function(e) {
+            touchStartY = e.touches[0].clientY;
+        });
+
+        userDialog.addEventListener('touchmove', function(e) {
+            const touchY = e.touches[0].clientY;
+            const deltaY = touchY - touchStartY;
+            
+            if (deltaY < -50) { // Swipe up to close
+                closeDialog();
+            }
+        });
+
+        const signOutBtn = document.querySelector(".logout-btn");
+
+        signOutBtn.addEventListener("click",()=>{
+          signOutBtn.disabled = true;
+          setTimeout(()=>{
+            crmApi.navigateToPage("Login");
+            signOutBtn.disabled = false;
+          },1000)
+        })
+
+        const uploadLeadFun = document.querySelector(".uploadLead");
+        uploadLeadFun.addEventListener("click",()=>{
+          crmApi.navigateToPage("uploadLead");
+        })
+
+        const dashboard = document.querySelector(".dashboard");
+        dashboard.addEventListener("click",()=>{
+          crmApi.navigateToPage("personDashboard");
+        })
+
+//-------------------------------------------------city input logic------------------------------------------------------------------------
+
+const cityDropdown = document.getElementById("cityDropdown");
+const cityInput = document.getElementById("city");
+
+cityDropdown.addEventListener("change", () => {
+  if (cityDropdown.value === "Others") {
+    cityDropdown.classList.add("hide");
+    cityDropdown.removeAttribute("required");
+    cityInput.classList.remove("hide");
+    cityInput.setAttribute("required","true")
+    cityInput.value = ""; // Clear input for manual entry
+  } else {
+    cityInput.value = cityDropdown.value;
+  }
+});
+
+//----------------------------------------------Post Consultation Form Logic----------------------------------------------------------------
+
+// Post-Consultation Form Logic
+
+// Get all necessary elements
+const leadStatusSelect = document.getElementById('leadStatus');
+const postConsultationSection = document.getElementById('postConsultationSection');
+const orderStatusRadios = document.querySelectorAll('.order-status-radio');
+const bookedSection = document.getElementById('bookedSection');
+const notBookedSection = document.getElementById('notBookedSection');
+const orderStatusBooked = document.getElementById("orderBooked");
+const orderStatusNotBooked = document.getElementById("orderNotBooked");
+const totalSalesAmount = document.getElementById("totalSalesAmount");
+const notBookedFeedback = document.getElementById("notBookedFeedback");
+const orderDate = document.getElementById("orderDate");
+
+// Show/Hide Post-Consultation Section based on Lead Status
+if (leadStatusSelect) {
+    leadStatusSelect.addEventListener('change', function() {
+        orderStatusBooked.removeAttribute("required");
+        orderStatusNotBooked.removeAttribute("required");
+        totalSalesAmount.removeAttribute("required");
+        notBookedFeedback.removeAttribute("required");
+        orderDate.removeAttribute("required");
+        const selectedStatus = this.value;
+        
+        if (selectedStatus === 'Consultation Visited' || selectedStatus === 'Order Booked' || selectedStatus === 'Not Booked Follow up') {
+            postConsultationSection.classList.remove('hide');
+            postConsultationSection.classList.add('animate-in');
+            orderStatusBooked.setAttribute("required","true");
+            orderStatusNotBooked.setAttribute("required","true");
+        } else {
+            postConsultationSection.classList.add('hide');
+            // Reset the form when hidden
+            // resetPostConsultationForm();
+        }
+    });
+}
+
+// Handle Order Status Radio Selection
+orderStatusRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+        const selectedValue = this.value;
+        
+        if (selectedValue === 'Booked') {
+            // Show Booked Section
+            bookedSection.classList.remove('hide');
+            bookedSection.classList.add('animate-in');
+            
+            // Hide Not Booked Section
+            notBookedSection.classList.add('hide');
+            totalSalesAmount.setAttribute("required","true"); 
+            notBookedFeedback.removeAttribute("required");
+            orderDate.setAttribute("required","true");
+            
+            // Clear Not Booked fields
+            // clearNotBookedFields();
+            
+        } else if (selectedValue === 'Not Booked') {
+            // Show Not Booked Section
+            notBookedSection.classList.remove('hide');
+            notBookedSection.classList.add('animate-in');
+            
+            // Hide Booked Section
+            bookedSection.classList.add('hide');
+            notBookedFeedback.setAttribute("required","true");
+            totalSalesAmount.removeAttribute("required");
+            orderDate.removeAttribute("required");
+            
+            // Clear Booked fields
+            // clearBookedFields();
+        }
+    });
+});
+
+// Clear Booked Section Fields
+function clearBookedFields() {
+    document.getElementById('totalSalesAmount').value = '';
+    orderDate.value = '';
+}
+
+// Clear Not Booked Section Fields
+function clearNotBookedFields() {
+    document.getElementById('notBookedFeedback').value = '';
+
+}
+
+// Reset entire Post-Consultation Form
+function resetPostConsultationForm() {
+    // Reset radio selection
+    orderStatusRadios.forEach(radio => radio.checked = false);
+    
+    // Hide both sections
+    bookedSection.classList.add('hide');
+    notBookedSection.classList.add('hide');
+    
+    // Clear all fields
+    clearBookedFields();
+    clearNotBookedFields();
+}
+
+// Number validation for amount fields
+const numberInputs = document.querySelectorAll('input[type="number"]');
+numberInputs.forEach(input => {
+    input.addEventListener('input', function() {
+        // Prevent negative values
+        if (this.value < 0) {
+            this.value = 0;
+        }
+        
+        // For noOfOrders, ensure it's an integer
+        if (this.id === 'noOfOrders' && this.value) {
+            this.value = Math.floor(this.value);
+        }
+    });
+});
+
+// Add visual feedback for filled inputs
+const allInputs = document.querySelectorAll('.animated-input, .animated-select');
+allInputs.forEach(input => {
+    input.addEventListener('change', function() {
+        if (this.value) {
+            this.style.borderColor = '#58B1A5';
+            this.style.backgroundColor = 'rgba(88, 177, 165, 0.05)';
+        } else {
+            this.style.borderColor = '#e0e0e0';
+            this.style.backgroundColor = 'white';
+        }
+    });
+});
+
+// Console log for debugging (remove in production)
+console.log('Post-Consultation Form Script Loaded Successfully');
+
+
+
+
+
+
+
+
+</script>

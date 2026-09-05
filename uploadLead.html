@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Lead - American Hairline CRM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #f5f5f5;
+        }
+
+        /* Left Navigation */
+        .sidebar {
+            width: 220px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            height: 100%;
+            overflow-y: auto;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 60px;
+            transition: width 0.3s;
+        }
+
+        .sidebar.collapsed .sidebar-header h2,
+        .sidebar.collapsed .nav-links a {
+            display: none;
+        }
+
+        .sidebar-header {
+            padding: 0 15px 20px;
+            border-bottom: 1px solid #34495e;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar-toggle {
+            margin-right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            color: white;
+            background: none;
+            border: none;
+        }
+
+        .nav-links {
+            padding: 15px;
+        }
+
+        .nav-links a {
+            display: block;
+            color: #ecf0f1;
+            text-decoration: none;
+            padding: 8px 0;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #3498db;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* User Icon */
+        .user-icon {
+            position: absolute;
+            top: 5px;
+            right: 20px;
+            background: linear-gradient(135deg, #4a69bd 0%, #3b5998 100%);
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 700;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(74, 105, 189, 0.3);
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-icon:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(74, 105, 189, 0.4);
+        }
+
+        /* App Header */
+        .app-header {
+            padding: 15px;
+            background-color: white;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+        }
+
+        .app-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        /* Upload Lead Container */
+        .upload-lead-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+        }
+
+        .upload-lead-form {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .form-title {
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f1f1;
+            font-size: 24px;
+            color: #333;
+            text-align: center;
+            position: relative;
+        }
+
+        .form-title::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(135deg, #4a69bd 0%, #3b5998 100%);
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            gap: 20px;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4a69bd;
+            box-shadow: 0 0 0 3px rgba(74, 105, 189, 0.1);
+        }
+
+        .form-group textarea {
+            height: 120px;
+            resize: vertical;
+            max-width: 100%;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .radio-option:hover {
+            border-color: #4a69bd;
+            background-color: #f8f9fa;
+        }
+
+        .radio-option input {
+            margin-right: 8px;
+            width: auto;
+        }
+
+        .radio-option input:checked + label,
+        .radio-option:has(input:checked) {
+            color: #4a69bd;
+            border-color: #4a69bd;
+            background-color: rgba(74, 105, 189, 0.05);
+        }
+
+        .optional-questions {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 25px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border: 1px solid #e9ecef;
+        }
+
+        .optional-questions h3 {
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #333;
+            text-align: center;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            min-width: 150px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            min-width: 150px;
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(149, 165, 166, 0.3);
+        }
+
+        /* Success Message */
+        .success-message {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Hide class */
+        .hide {
+            display: none;
+        }
+
+        /* Required field indicator */
+        .form-group label span {
+            color: #e74c3c;
+        }
+
+        /* Loading state */
+        .btn-submit:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-submit.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn-submit.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* User Dialog Box Styles - Professional CRM Theme */
+        .user-dialog {
+            position: absolute;
+            top: 55px;
+            right: 20px;
+            width: 260px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 
+                0 15px 30px rgba(44, 62, 80, 0.15),
+                0 8px 20px rgba(74, 105, 189, 0.1),
+                0 0 0 1px rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(74, 105, 189, 0.1);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-20px) scale(0.95);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .user-dialog.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Enhanced Arrow */
+        .user-dialog::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            right: 18px;
+            width: 16px;
+            height: 16px;
+            background: #ffffff;
+            border: 1px solid rgba(74, 105, 189, 0.1);
+            border-bottom: none;
+            border-right: none;
+            transform: rotate(45deg);
+            box-shadow: -2px -2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Professional Header with CRM Branding */
+        .dialog-header {
+            padding: 16px 20px 12px;
+            background: linear-gradient(135deg, #4a69bd 0%, #3b5998 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .dialog-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: translateX(-100%);
+            animation: headerShine 3s ease-in-out infinite;
+        }
+
+        @keyframes headerShine {
+            0% { transform: translateX(-100%); }
+            50% { transform: translateX(100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .dialog-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+
+        .header-icon {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .close-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 16px;
+            color: white;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 50%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+        }
+
+        .close-btn:hover {
+            background: rgba(231, 76, 60, 0.9);
+            border-color: rgba(231, 76, 60, 1);
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        .close-btn:active {
+            transform: scale(0.95) rotate(90deg);
+        }
+
+        /* Enhanced Dialog Body */
+        .dialog-body {
+            padding: 20px 20px 18px;
+            background: #ffffff;
+        }
+
+        .user-info {
+            margin-bottom: 18px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 14px;
+            padding: 12px 14px;
+            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid rgba(74, 105, 189, 0.08);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .info-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 105, 189, 0.15);
+            border-color: rgba(74, 105, 189, 0.2);
+            background: #ffffff;
+        }
+
+        .info-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, #4a69bd 0%, #3b5998 100%);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-icon {
+            width: 32px;
+            height: 32px;
+            margin-right: 12px;
+            background: linear-gradient(135deg, #4a69bd 0%, #3b5998 100%);
+            color: white;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(74, 105, 189, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-icon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .info-item:hover .info-icon::before {
+            left: 100%;
+        }
+
+        .info-content {
+            flex: 1;
+        }
+
+        .info-label {
+            font-size: 11px;
+            color: #6c757d;
+            margin-bottom: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-value {
+            font-size: 14px;
+            color: #2c3e50;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        /* Enhanced Permission Badges */
+        .permission-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .permission-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .permission-badge:hover::before {
+            left: 100%;
+        }
+
+        .permission-badge.admin {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .permission-badge.user {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .permission-badge.manager {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+
+        .badge-icon {
+            font-size: 10px;
+        }
+
+        /* Professional Logout Button */
+        .logout-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .logout-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(231, 76, 60, 0.4);
+            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+        }
+
+        .logout-btn:hover::before {
+            left: 100%;
+        }
+
+        .logout-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .logout-icon {
+            font-size: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .logout-btn:hover .logout-icon {
+            transform: translateX(2px);
+        }
+
+        /* Enhanced Backdrop */
+        .dialog-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(44, 62, 80, 0.1);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .dialog-backdrop.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Professional Entry Animation */
+        @keyframes professionalEntry {
+            0% {
+                opacity: 0;
+                transform: translateY(-30px) scale(0.9) rotateX(-10deg);
+                filter: blur(3px);
+            }
+            50% {
+                opacity: 0.7;
+                transform: translateY(-5px) scale(1.02) rotateX(-2deg);
+                filter: blur(1px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1) rotateX(0deg);
+                filter: blur(0px);
+            }
+        }
+
+        .user-dialog.show {
+            animation: professionalEntry 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .upload-lead-form {
+                padding: 20px;
+            }
+            
+            .form-group {
+                min-width: 200px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                order: 2;
+            }
+            
+            .main-content {
+                order: 1;
+            }
+            
+            .form-group {
+                min-width: 100%;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .radio-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .user-dialog {
+                right: 10px;
+                width: 240px;
+            }
+            
+            .dialog-header {
+                padding: 18px;
+            }
+            
+            .dialog-body {
+                padding: 18px 18px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Left Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <button class="sidebar-toggle">≡</button>
+            <h2>CRM</h2>
+        </div>
+
+        <div class="nav-links">
+            <a href="#" class="dashboard">Dashboard</a>
+            <a href="#" onclick="goToAllLeads()">All Leads</a>
+            <a href="#" class="active">Upload Lead</a>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <!-- User Icon -->
+        <div class="user-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#FFFFFF" viewBox="0 0 24 24">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-3.31 0-6 2.69-6 6v2h12v-2c0-3.31-2.69-6-6-6z"/>
+            </svg>
+        </div>
+
+        <!-- Professional backdrop -->
+        <div class="dialog-backdrop"></div>
+
+        <!-- Enhanced User Dialog Box -->
+        <div class="user-dialog">
+            <!-- Professional Header -->
+            <div class="dialog-header">
+                <h3>
+                    <div class="header-icon">👤</div>
+                    User Profile
+                </h3>
+                <button class="close-btn" type="button">×</button>
+            </div>
+
+            <!-- Enhanced Dialog Body -->
+            <div class="dialog-body">
+                <!-- Professional User Information -->
+                <div class="user-info">
+                    <div class="info-item">
+                        <div class="info-icon">👤</div>
+                        <div class="info-content">
+                            <div class="info-label">Username</div>
+                            <div class="info-value" id="dialog-username">john_doe</div>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-icon">🔐</div>
+                        <div class="info-content">
+                            <div class="info-label">Permission Level</div>
+                            <div class="info-value">
+                                <span class="permission-badge admin" id="dialog-permission">
+                                    <span class="badge-icon">⭐</span>
+                                    Admin
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Professional Logout Button -->
+                <button class="logout-btn" type="button">
+                    <span class="logout-icon">🚪</span>
+                    Sign Out
+                </button>
+            </div>
+        </div>
+
+        <!-- App Header -->
+        <div class="app-header">
+            <div class="app-title">American Hairline CRM - Upload New Lead</div>
+        </div>
+
+        <!-- Upload Lead Container -->
+        <div class="upload-lead-container">
+            <div class="success-message" id="successMessage">
+                <strong>Success!</strong> Lead has been uploaded successfully.
+            </div>
+
+            <div class="upload-lead-form">
+                <form class="lead-info-form" id="leadUploadForm">
+                    <div class="form-title">
+                        Upload New Lead
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="leadDate">Lead Date</label>
+                            <input type="datetime-local" id="leadDate" name="leadDate" class="response" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="clientName">Client Name <span>*</span></label>
+                            <input type="text" id="clientName" name="clientName" class="response" required placeholder="Enter client name">
+                        </div>
+                        <div class="form-group">
+                            <label for="mobileNo">Mobile No <span>*</span></label>
+                            <input type="number" id="mobileNo" name="mobileNo" class="response" required placeholder="Enter mobile number">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                          <div class="form-group">
+                          <label for="city">City <span class="cityAstrik" style="display:inline; color:red;">*</span></label>
+                          <select id="cityDropdown" class="response">
+                            <option value="" disabled selected>Select a city</option>
+                            <option value="Mumbai">Mumbai</option>
+                            <option value="Delhi">Delhi</option>
+                            <option value="Bangalore">Bangalore</option>
+                            <option value="Others">Others</option>
+                          </select>
+                          <input type="text" id="city" name="city" class="response hide" placeholder="Enter the city">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="town">Towns</label>
+                            <input type="text" id="town" class="response" name="town" placeholder="Enter town (optional)">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Call Type <span>*</span></label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" id="incoming" name="callType" class="response" value="Incoming" required>
+                                    <label for="incoming">Incoming</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="platform">Platform <span>*</span></label>
+                            <select id="platform" name="platform" class="response" required>
+                                <option value="" disabled selected>Select a platform</option>
+                                <option value="Incoming">Incoming</option>
+
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="interestedIn">Interested In <span>*</span></label>
+                            <select id="interestedIn" name="interestedIn" class="response" required>
+                                <option value="" disabled selected>Select one</option>
+                                <option value="Hair Patch">Hair Patch</option>
+                                <option value="Hair transplant">Hair transplant</option>
+                                <option value="Scalp micro pigmentation">Scalp micro pigmentation</option>
+                                <option value="Hairline patch">Hairline patch</option>
+                                <option value="Not sure looking for guidance">Not sure looking for guidance</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="rating">Rating <span>*</span></label>
+                            <select id="rating" name="rating" class="response" required>
+                                <option value="" disabled selected>Select rating</option>
+                                <option value="1">★</option>
+                                <option value="2">★★</option>
+                                <option value="3">★★★</option>
+                                <option value="4">★★★★</option>
+                                <option value="5">★★★★★</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="leadStatus">Lead Status <span>*</span></label>
+                            <select id="leadStatus" name="leadStatus" class="response" required>
+                                <option value="" disabled selected>Select status</option>
+                                <!-- <option value="New Lead">New Lead</option> -->
+                                <option value="Warm Lead">Warm Lead</option>
+                                <option value="Cold Lead 1">Cold Lead 1</option>
+                                <option value="Cold Lead 2">Cold Lead 2</option>
+                                <option value="Deferred Lead">Deferred Lead</option>
+                                <option value="Ringing / Busy">Ringing / Busy</option>
+                                <option value="Consultation Booked">Consultation Booked</option>
+                                <!-- <option value="Consultation Visited">Consultation Visited</option> -->
+                                <option value="Lost">Lost</option>
+                                <option value="Dead">Dead</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row" id="followupRow">
+                        <div class="form-group">
+                            <label for="followUpDate">Follow Up Date <span>*</span></label>
+                            <input type="datetime-local" id="followUpDate" name="followUpDate" class="response" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="noOfFollowups">No of Follow Ups</label>
+                            <input type="number" min="0" id="noOfFollowups" name="noOfFollowups" class="response" readonly value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="assignedTo">Assigned To</label>
+                            <input type="text" id="assignedTo" name="assignedTo" class="response" readonly placeholder="Auto-assigned">
+                        </div>
+                    </div>
+
+                    <div class="form-row hide" id="consultationBookedRow">
+                        <div class="form-group">
+                            <label for="consutlationBookedDate">Consultation Booked Date <span>*</span></label>
+                            <input type="datetime-local" id="consutlationBookedDate" name="consutlationBookedDate" class="response">
+                        </div>
+                    </div>
+
+                    <div class="form-row hide" id="consultationTypeRow">
+                        <div class="form-group">
+                            <label for="consultationType">Consultation Type <span>*</span></label>
+                            <select id="consultationType" name="consultationType" class="response">
+                                <option value="" disabled selected>Select type</option>
+                                <option value="In-person">In-person</option>
+                                <option value="Video">Video</option>
+                                <option value="Bangalore (In-person)">Bangalore (In-person)</option>
+                                <option value="Delhi (In-person)">Delhi (In-person)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                             <label for="consultationStatus">Consultation Status <span style="display:inline; color:red;">*</span></label>
+                            <select id="consultationStatus" name="consultationStatus" class="response" required>
+                                <option value="" disabled selected>Select a one</option>
+                                <option value="New">New</option>
+                                <option value="Consultation Re-Booked">Consultation Re-Booked</option>
+                                <option value="Re-schedule Consultation">Re-schedule Consultation</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <div class="form-row hide" id="consultationVisitedRow">
+                        <div class="form-group">
+                            <label for="consutlationVisitedDate">Consultation Visited Date <span>*</span></label>
+                            <input type="date" id="consutlationVisitedDate" name="consutlationVisitedDate" class="response">
+                        </div> 
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hearAboutUs">How Did You Hear About Us? <span>*</span></label>
+                            <select id="hearAboutUs" name="hearAboutUs" class="response" required>
+                                <option value="" disabled selected>Select one</option>
+                                <option value="Ads">Ads</option>
+                                <option value="Youtube">Youtube</option>
+                                <option value="Google">Google</option>
+                                <option value="Instagram">Instagram</option>
+                                <option value="Facebook">Facebook</option>
+                                <option value="Whatsapp Ads">Whatsapp Ads</option>
+                                <option value="Flexi Funnel">Flexi Funnel</option>
+                                <option value="Others">Others</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="initialRemark">Initial Remark <span>*</span></label>
+                            <select id="initialRemark" name="initialRemark" class="response" required>
+                                <option value="" disabled selected>Select one</option>
+                                <option value="Low budget">Low budget</option>
+                                <option value="Call later">Call later</option>
+                                <option value="Consultation booked">Consultation booked</option>
+                                <option value="Video consultation booked">Video consultation booked</option>
+                                <option value="Will Visit later">Will Visit later</option>
+                                <option value="Genuine client will inform later">Genuine client will inform later</option>
+                                <option value="Service and Fixing appointment">Service and Fixing appointment</option>
+                                <option value="Only for Enquiry">Only for Enquiry</option>
+                                <option value="Invalid no">Invalid no</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="detailComment">Detail Comment</label>
+                            <textarea id="detailComment" name="detailComment" class="response" required placeholder="Enter detailed comments about the lead"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="optional-questions">
+                        <h3>Questions to Ask Client</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="Q1">1. How soon are you looking for solution? <span>*</span></label>
+                                <select id="Q1" name="Q1" class="response" required>
+                                    <option value="" disabled selected>Select one</option>
+                                    <option value="As soon as possible">As soon as possible</option>
+                                    <option value="In the next two weeks">In the next two weeks</option>
+                                    <option value="Within a month">Within a month</option>
+                                    <option value="Not urgent">Not urgent</option>
+                                    <option value="Not given">Not given</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="Q2">2. Do you have a budget in mind? <span>*</span></label>
+                                <select id="Q2" name="Q2" class="response" required>
+                                    <option value="" disabled selected>Select one</option>
+                                    <option value="Below 20000">Below 20000</option>
+                                    <option value="20000 - 35000">20000 - 35000</option>
+                                    <option value="35000 - 45000">35000 - 45000</option>
+                                    <option value="Need the best! cost is not constraint.">Need the best! cost is not constraint.</option>
+                                    <option value="Not given">Not given</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="Q3">3. Willing to visit to the center? <span>*</span></label>
+                                <select id="Q3" name="Q3" class="response" required>
+                                <option value="" disabled selected>Select a one</option>
+                                  <option value="Yes">Yes</option>
+                                  <option value="No">No</option>
+                                  <option value="Not given">Not given</option>
+                                </select>
+                            </div>
+                            <!-- <div class="form-group">
+                                <label for="Q4">4. Hair fall since?</label>
+                                <select id="Q4" name="Q4" class="response">
+                                    <option value="" disabled selected>Select one</option>
+                                    <option value="2 years">2 years</option>
+                                    <option value="4 years">4 years</option>
+                                    <option value="6 years">6 years</option>
+                                    <option value="8 years">8 years</option>
+                                </select>
+                            </div> -->
+                        </div>
+                        
+                        <!-- <div class="form-row">
+                            <div class="form-group">
+                                <label for="Q5">5. Done hair transplant before?</label>
+                                <select id="Q5" name="Q5" class="response">
+                                    <option value="" disabled selected>Select one</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="Q6">6. Gotten a hair system before?</label>
+                                <select id="Q6" name="Q6" class="response">
+                                    <option value="" disabled selected>Select one</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                        </div> -->
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit" id="submitBtn">Upload Lead</button>
+                        <button type="reset" class="btn-reset" id="resetBtn">Reset Form</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sidebar Toggle Functionality
+        const toggleBtn = document.querySelector('.sidebar-toggle');
+        const sidebar = document.querySelector('.sidebar');
+
+        // Collapse sidebar by default when page loads
+        sidebar.classList.add('collapsed');
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            console.log('Sidebar toggled:', sidebar.classList.contains('collapsed') ? 'Collapsed' : 'Expanded');
+        });
+
+        // Initialize form with default values
+        function initializeForm() {
+            // Set current date and time for lead date
+            const now = new Date();
+            const localISO = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            document.getElementById('leadDate').value = localISO;
+            
+            
+            // Set assigned to (you can modify this based on logged user)
+            const loggedUser = JSON.parse(localStorage.getItem("loggedInUser")) || {username: "Current User", permission: "Admin"};
+            document.getElementById('assignedTo').value = loggedUser.username;
+            
+
+        }
+
+        // Lead Status Change Functionality
+        const leadStatusDropdown = document.getElementById("leadStatus");
+        const cityGroup = document.getElementById("city").closest(".form-group");
+        const townGroup = document.getElementById("town").closest(".form-group");
+        const interestedInGroup = document.getElementById("interestedIn").closest(".form-group"); 
+        const ratingGroup = document.getElementById("rating").closest(".form-group");
+        const initialRemarkGroup = document.getElementById("initialRemark").closest(".form-group");
+        const detailedCommentGroup = document.getElementById("detailComment").closest(".form-group");
+        const consBookedRow = document.getElementById("consultationBookedRow");
+        const consVisitedRow = document.getElementById("consultationVisitedRow");
+        const followupRow = document.getElementById("followupRow");
+        const consultationTypeRow = document.getElementById("consultationTypeRow");
+        const hearAboutUsGroup = document.getElementById("hearAboutUs").closest(".form-row");
+
+        leadStatusDropdown.addEventListener("change", () => {
+            const leadStatus = leadStatusDropdown.value;
+
+            // Get form elements
+            const city = document.getElementById("city");
+            const interestedIn = document.getElementById("interestedIn");
+            const rating = document.getElementById("rating");
+            const initialRemark = document.getElementById("initialRemark");
+            const detailComment = document.getElementById("detailComment");
+            const followUpDate = document.getElementById("followUpDate");
+            const consutlationBookedDate = document.getElementById("consutlationBookedDate");
+            const consutlationVisitedDate = document.getElementById("consutlationVisitedDate");
+            const consultationType = document.getElementById("consultationType");
+            const hearAboutUs = document.getElementById("hearAboutUs");
+            const consultationTypeStatus = document.getElementById("consultationStatus");
+
+            // Hide conditional fields by default
+            consBookedRow.classList.add("hide");
+            consVisitedRow.classList.add("hide");
+            followupRow.classList.remove("hide");
+            consultationTypeRow.classList.add("hide");
+
+            // Reset required attributes
+            followUpDate.removeAttribute("required");
+            consutlationBookedDate.removeAttribute("required");
+            consutlationVisitedDate.removeAttribute("required");
+            consultationType.removeAttribute("required");
+            consultationTypeStatus.removeAttribute("required");
+
+            // Show/hide based on status
+            if (leadStatus === "Consultation Booked") {
+                consBookedRow.classList.remove("hide");
+                consultationTypeRow.classList.remove("hide");
+                followupRow.classList.add("hide");
+                consutlationBookedDate.setAttribute("required", "true");
+                consultationType.setAttribute("required", "true");
+                consultationTypeStatus.setAttribute("required","true");
+            }
+
+            if (leadStatus === "Consultation Visited") {
+                consVisitedRow.classList.remove("hide");
+                followupRow.classList.add("hide");
+                consutlationVisitedDate.setAttribute("required", "true");
+            }
+
+            if (["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Lost", "Dead"].includes(leadStatus)) {
+                followupRow.classList.remove("hide");
+                followUpDate.setAttribute("required", "true");
+            }
+
+              if(leadStatus === "New Lead"){
+              followupRow.classList.remove("hide");
+              followUpDate.setAttribute("required", "true");
+              }
+
+            // Ringing / Busy minimal form
+            if (leadStatus === "Ringing / Busy") {
+                cityGroup.classList.add("hide");
+                interestedInGroup.classList.add("hide");
+                ratingGroup.classList.add("hide");
+                initialRemarkGroup.classList.add("hide");
+                detailedCommentGroup.classList.add("hide");
+                city.removeAttribute("required");
+                interestedIn.removeAttribute("required");
+                rating.removeAttribute("required");
+                initialRemark.removeAttribute("required");
+                detailComment.removeAttribute("required");
+                hearAboutUsGroup.classList.add("hide");
+                hearAboutUs.removeAttribute("required");
+                followupRow.classList.remove("hide");
+              followUpDate.setAttribute("required", "true");
+            } else {
+                cityGroup.classList.remove("hide");
+                interestedInGroup.classList.remove("hide");
+                ratingGroup.classList.remove("hide");
+                initialRemarkGroup.classList.remove("hide");
+                detailedCommentGroup.classList.remove("hide");
+                city.setAttribute("required", "true");
+                interestedIn.setAttribute("required", "true");
+                rating.setAttribute("required", "true");
+                initialRemark.setAttribute("required", "true");
+                detailComment.setAttribute("required", "true");
+                hearAboutUsGroup.classList.remove("hide");
+                hearAboutUs.setAttribute("required","true");
+            }
+        });
+
+        // User Dialog Functionality
+        const userIcon = document.querySelector('.user-icon');
+        const userDialog = document.querySelector('.user-dialog');
+        const closeBtn = document.querySelector('.close-btn');
+        const dialogBackdrop = document.querySelector('.dialog-backdrop');
+        const logoutBtn = document.querySelector('.logout-btn');
+
+        // Load and display user info
+        function loadUserInfo() {
+            const loggedUser = JSON.parse(localStorage.getItem("loggedInUser")) || {username: "Demo User", permission: "Admin"};
+            document.getElementById("dialog-username").textContent = loggedUser.username;
+            const permissionElement = document.getElementById("dialog-permission");
+            permissionElement.textContent = loggedUser.permission;
+            
+            // Update permission badge class based on permission level
+            permissionElement.className = `permission-badge ${loggedUser.permission.toLowerCase()}`;
+        }
+
+        // Open dialog with enhanced animation
+        userIcon.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userDialog.classList.add('show');
+            dialogBackdrop.classList.add('show');
+            
+            // Add slight delay for smoother animation
+            setTimeout(() => {
+                userDialog.style.animation = 'none';
+            }, 600);
+        });
+
+        // Close dialog functions
+        function closeDialog() {
+            userDialog.classList.remove('show');
+            dialogBackdrop.classList.remove('show');
+        }
+
+        closeBtn.addEventListener('click', closeDialog);
+        dialogBackdrop.addEventListener('click', closeDialog);
+
+        // Enhanced keyboard support
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && userDialog.classList.contains('show')) {
+                closeDialog();
+            }
+        });
+
+        // Prevent dialog from closing when clicking inside it
+        userDialog.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        // Enhanced touch support for mobile
+        let touchStartY = 0;
+        userDialog.addEventListener('touchstart', function(e) {
+            touchStartY = e.touches[0].clientY;
+        });
+
+        userDialog.addEventListener('touchmove', function(e) {
+            const touchY = e.touches[0].clientY;
+            const deltaY = touchY - touchStartY;
+            
+            if (deltaY < -50) { // Swipe up to close
+                closeDialog();
+            }
+        });
+
+        logoutBtn.addEventListener("click", () => {
+            logoutBtn.disabled = true;
+            logoutBtn.innerHTML = '<span class="logout-icon">⏳</span>Signing Out...';
+
+            setTimeout(() => {
+                logoutBtn.innerHTML = '<span class="logout-icon">🚪</span>Sign Out';
+                logoutBtn.disabled = false;
+                closeDialog();
+                crmApi.navigateToPage("Login");
+            }, 1000);
+        });
+
+        // Navigation Functions
+        function goToAllLeads() {
+           crmApi.navigateToPage("Home");
+        }
+
+        // Form Submission Handler
+        document.getElementById('leadUploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const successMessage = document.getElementById('successMessage');
+            
+            // Add loading state
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+            
+            // Collect form data
+            const formData = new FormData(this);
+            const leadData = {};
+            
+            for (let [key, value] of formData.entries()) {
+                leadData[key] = value;
+            }
+            console.log('Lead data to submit:', leadData);
+
+            crmApi.invokeGas("newLeadUpload", leadData).then(onSuccess).catch((err) => { console.error(err); alert("Failed to upload lead"); });
+
+            
+
+        });
+
+        function onSuccess(message){
+            const successMessage = document.getElementById('successMessage');
+            if (typeof message === "string") {
+                successMessage.innerHTML = message;
+            } else if (message && message.success) {
+                successMessage.innerHTML = "Lead uploaded successfully";
+            } else {
+                successMessage.innerHTML = "Lead upload completed";
+            }
+            setTimeout(() => {
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
+                
+                // Show success message
+                successMessage.style.display = 'block';
+                successMessage.scrollIntoView({ behavior: 'smooth' });
+                
+                // Hide success message after 5 seconds
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 5000);
+                
+                // Optionally reset form
+                document.getElementById('leadUploadForm').reset();
+                initializeForm();
+                
+            }, 2000); // Simulate 2-second submission time
+        }
+
+            
+
+        // Reset form handler
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            setTimeout(initializeForm, 100); // Reinitialize after reset
+        });
+
+        // Call initialize functions when page loads
+        window.addEventListener('load', function() {
+            initializeForm();
+            loadUserInfo();
+        });
+
+        const dashboard = document.querySelector(".dashboard");
+        dashboard.addEventListener("click",()=>{
+          crmApi.navigateToPage("personDashboard");
+        })
+
+//-------------------------------------------------city input logic------------------------------------------------------------------------
+
+const cityDropdown = document.getElementById("cityDropdown");
+const cityInput = document.getElementById("city");
+
+cityDropdown.addEventListener("change", () => {
+  if (cityDropdown.value === "Others") {
+    cityDropdown.classList.add("hide");
+    cityDropdown.removeAttribute("required");
+    cityInput.classList.remove("hide");
+    cityInput.setAttribute("required","true")
+    cityInput.value = ""; // Clear input for manual entry
+  } else {
+    cityInput.value = cityDropdown.value;
+  }
+});
+        
+    </script>
+    <script>
+  window.CRM_USE_API_PROXY = "<?= CRM_USE_API_PROXY ?>";
+  window.CRM_WEB_APP_BASE = "<?= CRM_WEB_APP_BASE ?>";
+</script>
+<?!= HtmlService.createHtmlOutputFromFile("apiClient").getContent() ?>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<script>
+(function () {
+  const useProxy =
+    window.CRM_USE_API_PROXY === "true" ||
+    window.CRM_USE_API_PROXY === true;
+
+  function proxyRequest(path, method, payloadJson) {
+    return new Promise((resolve, reject) => {
+      try {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler((err) =>
+            reject(new Error(err && err.message ? err.message : "Apps Script API proxy failed"))
+          )
+          .crmApiProxy(path, method || "GET", payloadJson || null);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  function request(path, options) {
+    if (!useProxy) {
+      return Promise.reject(new Error("Firebase API proxy is not configured"));
+    }
+
+    const method = (options && options.method ? options.method : "GET").toUpperCase();
+    const body = options && options.body ? options.body : null;
+    return proxyRequest(path, method, body).then((data) => ({ success: true, data }));
+  }
+
+  function invokeGas(functionName, payload) {
+    if (useProxy) {
+      if (functionName === "checkLogin") {
+        return proxyRequest("/gas/checkLogin", "POST", JSON.stringify(payload || {})).then((data) => {
+          const parsed = typeof data === "string" ? JSON.parse(data) : { ...data };
+          if (parsed.message === "Login Successful" && !parsed.link && window.CRM_WEB_APP_BASE) {
+            parsed.link = window.CRM_WEB_APP_BASE + "?page=Home";
+          }
+          if (parsed.user && parsed.user.password) {
+            delete parsed.user.password;
+          }
+          return JSON.stringify(parsed);
+        });
+      }
+
+      if (functionName === "updateLeadDetails") {
+        return proxyRequest(`/gas/${functionName}`, "POST", JSON.stringify(payload || {}));
+      }
+
+      if (payload !== undefined && payload !== null) {
+        return proxyRequest(`/gas/${functionName}`, "POST", JSON.stringify(payload));
+      }
+
+      return proxyRequest(`/gas/${functionName}`, "GET", null);
+    }
+
+    if (functionName === "checkLogin") {
+      return new Promise((resolve, reject) => {
+        try {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler((err) => reject(new Error(err?.message || "Apps Script login failed")))
+            .checkLogin(payload);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler((err) => reject(new Error(err?.message || "Apps Script call failed")))
+          [functionName](payload);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  function getAppBaseUrl() {
+    const configured = window.CRM_WEB_APP_BASE;
+    if (configured) return String(configured).replace(/\/$/, "");
+    return `${window.location.origin}${window.location.pathname}`.replace(/\/$/, "");
+  }
+
+  function navigateToPage(page) {
+    window.open(`${getAppBaseUrl()}?page=${encodeURIComponent(page)}`, "_top");
+  }
+
+  window.crmApi = {
+    invokeGas,
+    request,
+    getAppBaseUrl,
+    navigateToPage,
+    updateLead(leadUniqueId, payload) {
+      return request(`/leads/${encodeURIComponent(leadUniqueId)}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+    },
+    getMetrics(params) {
+      const qs = new URLSearchParams(params || {}).toString();
+      return request(`/dashboard/metrics${qs ? `?${qs}` : ""}`, { method: "GET" }).then((res) => res.data);
+    },
+    syncEod(payload) {
+      return request("/sync/eod-to-sheets", {
+        method: "POST",
+        body: JSON.stringify(payload || {}),
+      }).then((res) => res.data);
+    },
+  };
+})();
+</script>

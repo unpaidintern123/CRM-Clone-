@@ -1,0 +1,626 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>American Hairline CRM</title>
+    <?!= HtmlService.createHtmlOutputFromFile("style").getContent() ?>
+</head>
+<body>
+  
+      <!-- Spinner Overlay -->
+    <div class="spinner-overlay" id="spinnerOverlay">
+        <div class="spinner-container">
+            <!-- Bars Spinner -->
+            <div class="spinner-bars">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+            
+            <div class="loading-text">Loading...</div>
+        </div>
+    </div>
+
+    <!-- Left Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <i class="sidebar-toggle">≡</i>
+            <h2>CRM</h2>
+        </div>
+
+        <div class="nav-links">
+            <a href="#" class="dashboard">Dashboard</a>
+            <a href="#" class="active">All Leads</a>
+            <a href="#" class="uploadLead">Upload Lead</a>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <!-- WhatsApp Icon at top right -->
+
+           <!-- Enhanced user icon without status indicator -->
+    <div class="user-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#FFFFFF" viewBox="0 0 24 24">
+  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-3.31 0-6 2.69-6 6v2h12v-2c0-3.31-2.69-6-6-6z"/>
+</svg>
+
+    </div>
+
+    <!-- Professional backdrop -->
+    <div class="dialog-backdrop"></div>
+
+    <!-- Enhanced User Dialog Box -->
+    <div class="user-dialog">
+        <!-- Professional Header -->
+        <div class="dialog-header">
+            <h3>
+                <div class="header-icon">👤</div>
+                User Profile
+            </h3>
+            <button class="close-btn" type="button">×</button>
+        </div>
+
+        <!-- Enhanced Dialog Body -->
+        <div class="dialog-body">
+            <!-- Professional User Information -->
+            <div class="user-info">
+                <div class="info-item">
+                    <div class="info-icon">👤</div>
+                    <div class="info-content">
+                        <div class="info-label">Username</div>
+                        <div class="info-value" id="dialog-username">john_doe</div>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-icon">🔐</div>
+                    <div class="info-content">
+                        <div class="info-label">Permission Level</div>
+                        <div class="info-value">
+                            <span class="permission-badge admin" id="dialog-permission">
+                                <span class="badge-icon">⭐</span>
+                                
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Professional Logout Button -->
+            <button class="logout-btn" type="button">
+                <span class="logout-icon">🚪</span>
+                Sign Out
+            </button>
+        </div>
+    </div>
+
+        <!-- App Header -->
+        <div class="app-header">
+            <div class="app-title">American Hairline CRM</div>
+        </div>
+
+        <!-- Filter Options - Now above lead stages -->
+          <div class="filter-row">
+            <div class="filter-container">
+              <div class="filter-group">
+                <label for="startDate">Start Date:</label>
+                <input type="date" id="startDate">
+              </div>
+              <div class="filter-group">
+                <label for="endDate">End Date:</label>
+                <input type="date" id="endDate">
+              </div>
+
+              <div class="filter-group hide">
+                <label for="dateFilter">Date:</label>
+                <select id="dateFilter">
+                  <option value="Today">Today</option>
+                  <option value="Past">Past</option>
+                  <option value="Custom">Custom</option>
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label for="cityFilter">City:</label>
+                <input type="text" id="cityFilter" placeholder="Enter City">
+              </div>
+              <div class="filter-group hide">
+                <label for="contactNoFilter">Contact No:</label>
+                <input type="number" id="contactNoFilter" placeholder="Enter contact no">
+              </div>
+
+              <div class="filter-group hide">
+                <label for="statusFilter">Status:</label>
+                <select id="statusFilter">
+                  <option value="">All</option>
+                  <option value="Warm Lead">Warm Lead</option>
+                  <option value="Cold Lead 1">Cold Lead 1</option>
+                  <option value="Cold Lead 2">Cold Lead 2</option>
+                  <option value="Deferred Lead">Deferred Lead</option>
+                  <option value="Ringing / Busy">Ringing / Busy</option>
+                  <option value="Not Reachable">Not Reachable</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="platformFilter">Platform:</label>
+                <select id="platformFilter">
+                  <option value="">All</option>
+                  <option value="Gallabox">Gallabox</option>
+                  <option value="Website">Website</option>
+                  <option value="Social Media">Social Media</option>
+                  <option value="Flexi Funnel">Flexi Funnel</option>
+                  <option value="Whatsapp Ads">Whatsapp Ads</option>
+                  <option value="Miscall">Miscall</option>
+                  <option value="Incoming">Incoming</option>
+                  <option value="Ebook">Ebook</option>
+                </select>
+              </div>
+
+              <div class="filter-group hide">
+                <label for="orderStatusFilter">Order Status: </label>
+                <select id="orderStatusFilter">
+                  <option value="">All</option>
+                  <option value="Booked">Booked</option>
+                  <option value="Not Booked">Not Booked</option>
+                  <option value="Not Filled">Not Filled</option>
+                </select>
+              </div>
+                <!-- Reset Button directly after Platform -->
+                <!-- Apply and Reset Buttons -->
+              <!-- Apply and Reset Buttons -->
+              <div class="filter-group button-group-inline">
+                <button class="btn-apply-filters">Apply Filters</button>
+                <button class="btn-reset-filters">Reset All Filters</button>
+              </div>
+
+            </div>
+          </div>
+
+
+
+        <!-- Lead Stage Filter Buttons - Now below filter -->
+        <div class="lead-stages">
+            <button class="stage-btn all-stage">All <span class="count">4</span></button>
+            <button class="stage-btn active new-lead">New Lead <span class="count">4</span></button>
+            <button class="stage-btn followup-stage">Follow Stage <span class="count">1</span></button>
+            <button class="stage-btn consultation-booked">Consultation Booked <span class="count">3</span></button>
+            <button class="stage-btn consultation-visited">Consultation Visited <span class="count">3</span></button>
+            <button class="stage-btn lost-stage">Lost <span class="count">3</span></button>
+        </div>
+
+        <!-- Content Container with Lead List and Form -->
+        <div class="content-container">
+            <!-- Lead List Section -->
+            <div class="lead-list-container">
+                
+            </div>
+
+            <!-- Lead Form Container -->
+            <div class="lead-form-container">
+                <div class="lead-form">
+                  <form class="lead-info-form">
+                    <div class="form-title">
+                        <span class="title-text">Lead Information</span>
+                        <div class="preferred-time-badge">
+                            <span class="badge-icon">⏰</span>
+                            <div class="badge-content">
+                                <span class="badge-label">Preferred Time To Call</span>
+                                <span class="badge-time" id="preferredCallTime">10:00 AM - 12:00 PM</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="leadDate">Lead Date</label>
+                            <input type="datetime-local" id="leadDate" name="leadDate" class="response" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="leadUniqueId">Lead Unique ID</label>
+                            <input type="text" id="leadUniqueId" name="leadUniqueId" class="response" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="clientName">Client Name <span style="display:inline; color:red;">*</span></label>
+                            <input type="text" id="clientName" name="clientName" class="response" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mobileNo">Mobile No <span style="display:inline; color:red;">*</span></label>
+                            <input type="tel" id="mobileNo" name="mobileNo" class="response" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="secondaryMobileNo">Secondary Mobile No</label>
+                            <input type="tel" id="secondaryMobileNo" name="secondaryMobileNo" class="response" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                       <div class="form-group">
+                          <label for="city">City <span class="cityAstrik" style="display:inline; color:red;">*</span></label>
+                          <select id="cityDropdown" class="response">
+                            <option value="" disabled selected>Select a city</option>
+                            <option value="Mumbai">Mumbai</option>
+                            <option value="Delhi">Delhi</option>
+                            <option value="Bangalore">Bangalore</option>
+                            <option value="Others">Others</option>
+                          </select>
+                          <input type="text" id="city" name="city" class="response hide" placeholder="Enter the city">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="consultationMode">Consultation Mode (Client Preference)</label>
+                            <input type="text" id="consultationMode" class="response" name="consultationMode" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="town">Towns</label>
+                            <input type="text" id="town" class="response" name="town">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Call Type <span style="display:inline; color:red;">*</span></label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" id="incoming" name="callType" class="response" value="Incoming">
+                                    <label for="incoming">Incoming</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" id="outgoing" name="callType" class="response" value="Outgoing">
+                                    <label for="outgoing">Outgoing</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                          <label for="platform">Platform <span style="display:inline; color:red;">*</span></label>
+                          <input type="text" id="platform" name="platform" class="response" readonly required>
+                          </select>
+                        </div>
+
+                        <div class="form-group">
+                          <label for="interestedIn">Interested In <span style="display:inline; color:red;">*</span></label>
+                          <select id="interestedIn" name="interestedIn" class="response" required>
+                            <option value="" disabled selected>Select a one</option>
+                            <option value="Hair Patch">Hair Patch</option>
+                            <option value="Hair transplant">Hair transplant</option>
+                            <option value="Scalp micro pigmentation">Scalp micro pigmentation</option>
+                            <option value="Hairline patch">Hairline patch</option>
+                            <option value="Not sure looking for guidance">Not sure looking for guidance</option>
+                          </select>
+                        </div>
+
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="rating">Rating <span style="display:inline; color:red;">*</span></label>
+                            <select id="rating" name="rating" class="response" required>
+                                <option value="" disabled selected>Select a one</option>
+                                <option value="1">★</option>
+                                <option value="2">★★</option>
+                                <option value="3">★★★</option>
+                                <option value="4">★★★★</option>
+                                <option value="5">★★★★★</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="leadStatus">Lead Status <span style="display:inline; color:red;">*</span></label>
+                            <select id="leadStatus" name="leadStatus" class="response" required>
+                                <option value="" disabled selected>Select a one</option>
+                                <option value="New Lead">New Lead</option>
+                                <option value="Warm Lead">Warm Lead</option>
+                                <option value="Cold Lead 1">Cold Lead 1</option>
+                                <option value="Cold Lead 2">Cold Lead 2</option>
+                                <option value="Deferred Lead">Deferred Lead</option>
+                                <option value="Ringing / Busy">Ringing / Busy</option>
+                                <option value="Not Reachable">Not Reachable</option>
+                                <option value="Consultation Booked">Consultation Booked</option>
+                                <option value="Consultation Visited" disabled>Consultation Visited</option>
+                                <option value="Lost">Lost</option>
+                                <option value="Dead">Dead</option>
+                                <option value="Not Visited Lost">Not Visited Lost</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="followUpDate">Follow Up Date <span style="display:inline; color:red;">*</span></label>
+                            <input type="datetime-local" id="followUpDate" name="followUpDate" class="response" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="noOfFollowups">No of Follow Ups</label>
+                            <input type="number" min="0" id="noOfFollowups" name="noOfFollowups" class="response" readonly>
+                        </div>
+
+                         <div class="form-group">
+                            <label for="assignedTo">Assigned To</label>
+                            <input type="text" id="assignedTo" name="assignedTo" class="response" readonly>
+                         </div>
+                    </div>
+
+                      <div class="form-row hide">
+                        <div class="form-group">
+                            <label for="consutlationBookedDate">Consultation Booked Date : <span style="display:inline; color:red;">*</span></label>
+                            <input type="datetime-local" id="consutlationBookedDate" name="consutlationBookedDate" class="response" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row" hide>
+                        <div class="form-group">
+                             <label for="consultationType">Consultation Type <span style="display:inline; color:red;">*</span></label>
+                            <select id="consultationType" name="consultationType" class="response" required>
+                                <option value="" disabled selected>Select a one</option>
+                                <option value="In-person">In-person</option>
+                                <option value="Video">Video</option>
+                                <option value="Bangalore (In-person)">Bangalore (In-person)</option>
+                                <option value="Delhi (In-person)">Delhi (In-person)</option>
+                            </select>
+                        </div>
+
+                         <div class="form-group">
+                             <label for="consultationStatus">Consultation Status <span style="display:inline; color:red;">*</span></label>
+                            <select id="consultationStatus" name="consultationStatus" class="response" required>
+                                <option value="" disabled selected>Select a one</option>
+                                <option value="New">New</option>
+                                <option value="Consultation Re-Booked">Consultation Re-Booked</option>
+                                <option value="Re-schedule Consultation">Re-schedule Consultation</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row hide">
+                        <div class="form-group">
+                            <label for="consutlationVisitedDate">Consultation Visited Date : <span style="display:inline; color:red;">*</span></label>
+                            <input type="date" id="consutlationVisitedDate" name="consutlationVisitedDate" class="response" class="response" required>
+                        </div> 
+                    </div>
+
+
+                      <div class="form-row">
+                        <div class="form-group">
+                            <label for="hearAboutUs">How Did You Hear About Us ?<span style="display:inline; color:red;">*</span></label>
+                              <select id="hearAboutUs" name="hearAboutUs" class="response" required>
+                                <option value="" disabled selected>Select a one</option>
+                                <option value="Ads">Ads</option>
+                                <option value="Youtube">Youtube</option>
+                                <option value="Google">Google</option>
+                                <option value="Instagram">Instagram</option>
+                                <option value="Facebook">Facebook</option>
+                                <option value="Whatsapp Ads">Whatsapp Ads</option>
+                                <option value="Flexi Funnel">Flexi Funnel</option>
+                                <option value="Gallabox">Gallabox</option>
+                                <option value="Others">Others</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="initialRemark">Initial Remark <span style="display:inline; color:red;">*</span></label>
+                              <select id="initialRemark" name="initialRemark" class="response" required>
+                                <option value="" disabled selected>Select a one</option>
+                                <option value="Low budget">Low budget</option>
+                                <option value="Location issue">Location issue</option>
+                                <option value="Disconnected / Not Connected">Disconnected / Not Connected</option>
+                                <option value="Call later">Call later</option>
+                                <option value="Consultation booked">Consultation booked</option>
+                                <option value="Video consultation booked">Video consultation booked</option>
+                                <option value="Will Visit later">Will Visit later</option>
+                                <option value="Genuine client will inform later">Genuine client will inform later</option>
+                                <option value="Service and Fixing appointment">Service and Fixing appointment</option>
+                                <option value="Only for Enquiry">Only for Enquiry</option>
+                                <option value="Not Interested">Not Interested</option>
+                                <option value="Invalid no">Invalid no</option>
+                                <option value="Duplicate no">Duplicate no</option>
+                                <option value="Switch off">Switch off</option>
+                                <option value="Language barrier">Language barrier</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="detailComment">Detail Comment <span style="display:inline; color:red;">*</span></label>
+                            <textarea id="detailComment" name="detailComment" class="response" required></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="optional-questions">
+                        <h3>Questions to Ask Client</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="Q1">1. How soon are you looking for solution?<span style="display:inline; color:red;">*</span></label>
+                                <select id="Q1" name="Q1" class="response" required>
+                                  <option value="" disabled selected>Select a one</option>
+                                  <option value="As soon as possible">As soon as possible</option>
+                                  <option value="In the next two weeks">In the next two weeks</option>
+                                  <option value="Within a month">Within a month</option>
+                                  <option value="Not urgent">Not urgent</option>
+                                  <option value="Not given">Not given</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="Q2">2. Do you have a budget in mind?<span style="display:inline; color:red;">*</span></label>
+                                <select id="Q2" name="Q2" class="response" required>
+                                  <option value="" disabled selected>Select a one</option>
+                                  <option value="Below 20000">Below 20000</option>
+                                  <option value="20000 - 35000">20000 - 35000</option>
+                                  <option value="35000 - 45000">35000 - 45000</option>
+                                  <option value="Need the best! cost is not constraint.">Need the best! cost is not constraint.</option>
+                                  <option value="Not given">Not given</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="Q3">3. Willing to visit to the center?<span style="display:inline; color:red;">*</span></label>
+                                <select id="Q3" name="Q3" class="response" required>
+                                <option value="" disabled selected>Select a one</option>
+                                  <option value="Yes">Yes</option>
+                                  <option value="No">No</option>
+                                  <option value="Not given">Not given</option>
+                                </select>
+                            </div>
+                          </div>
+                            <!-- <div class="form-group">
+                                <label for="Q4">4. Hair fall since?</label>
+                                <select id="Q4" name="Q4" class="response">
+                                  <option value="" disabled selected>Select a one</option>
+                                  <option value="2 years">2 years</option>
+                                  <option value="4 years">4 years</option>
+                                  <option value="6 years">6 years</option>
+                                  <option value="8 years">8 years</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="Q5">5. Done hair transplant before?</label>
+                                <select id="Q5" name="Q5" class="response">
+                                  <option value="" disabled selected>Select a one</option>
+                                  <option value="Yes">Yes</option>
+                                  <option value="No">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="Q6">6. Gotten a hair system before?</label>
+                                <select id="Q6" name="Q6" class="response">
+                                  <option value="" disabled selected>Select a one</option>
+                                  <option value="Yes">Yes</option>
+                                  <option value="No">No</option>
+                                </select>
+                            </div>
+                        </div> -->
+                    </div>
+
+
+            <!-- Post-Consultation Order Status Section -->
+              <div class="post-consultation-section hide" id="postConsultationSection">
+                  <h3 class="section-title">
+                      <span class="section-icon">📋</span>
+                      Order Details
+                  </h3>
+
+                  <!-- Order Status Selection -->
+                  <div class="form-row">
+                      <div class="form-group">
+                          <label for="orderStatus">Order Status <span style="color:red;">*</span></label>
+                          <div class="radio-group order-status-group">
+                              <div class="radio-option order-radio" style="cursor: not-allowed;">
+                                  <input type="radio" id="orderBooked" name="orderStatus" value="Booked"
+                                      class="response order-status-radio" style="pointer-events: none;" required>
+                                  <label for="orderBooked" style="pointer-events: none;">
+                                      <span class="radio-emoji">✅</span>
+                                      Booked
+                                  </label>
+                              </div>
+                              <div class="radio-option order-radio">
+                                  <input type="radio" id="orderNotBooked" name="orderStatus" value="Not Booked"
+                                      class="response order-status-radio" required>
+                                  <label for="orderNotBooked">
+                                      <span class="radio-emoji">❌</span>
+                                      Not Booked
+                                  </label>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- BOOKED SECTION -->
+                  <div class="conditional-section booked-section hide" id="bookedSection">
+                      <div class="section-header">
+                          <span class="header-emoji">🎉</span>
+                          <h4>Order Booked Information</h4>
+                      </div>
+
+
+                      <div class="form-row">
+                          <div class="form-group">
+                              <label for="totalSalesAmount">
+                                  <span class="label-icon">💰</span>
+                                  Total Sales Amount (₹) <span style="color:red;">*</span>
+                              </label>
+                              <input type="number" id="totalSalesAmount" name="totalSalesAmount" class="response animated-input"
+                                  placeholder="Enter amount" min="0" step="0.01" required readonly> 
+                          </div>
+
+                        <div class="form-group">
+                            <label for="orderDate">Order Booked Date : <span style="display:inline; color:red;">*</span></label>
+                            <input type="date" id="orderDate" name="orderDate" class="response" required readonly>
+                        </div>                                                
+                      </div>
+            
+                  </div>
+
+                  <!-- NOT BOOKED SECTION -->
+                  <div class="conditional-section not-booked-section hide" id="notBookedSection">
+                      <div class="section-header">
+                          <span class="header-emoji">📝</span>
+                          <h4>Follow-up Information</h4>
+                      </div>
+
+                      <div class="form-row">
+                          <div class="form-group">
+                              <label for="notBookedFeedback">
+                                  <span class="label-icon">💬</span>
+                                  Not Booked Feedback <span style="color:red;">*</span>
+                              </label>
+                              <textarea id="notBookedFeedback" name="notBookedFeedback" class="response" required></textarea>
+                          </div>
+
+
+                  </div>
+              </div>
+              </div>
+
+      
+                    <div class="form-actions">
+                        <button class="btn-update">Update Lead</button>
+                    </div>
+                  </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="confirmation-popup hide">
+  <div class="popup-content">
+    <h3>Are you sure you want to update the Lead?</h3>
+    <div class="popup-actions">
+      <button class="btn-yes">Yes</button>
+      <button class="btn-no">No</button>
+    </div>
+    <span class="confirmation-text"></span>
+  </div>
+</div>
+
+
+
+    <script>
+  window.CRM_USE_API_PROXY = "<?= CRM_USE_API_PROXY ?>";
+  window.CRM_WEB_APP_BASE = "<?= CRM_WEB_APP_BASE ?>";
+</script>
+<?!= HtmlService.createHtmlOutputFromFile("apiClient").getContent() ?>
+    <?!= HtmlService.createHtmlOutputFromFile("app").getContent() ?>
+    <?!= HtmlService.createHtmlOutputFromFile("leadFormSubmit").getContent() ?>
+    <?!= HtmlService.createHtmlOutputFromFile("filters").getContent() ?>
+  
+
+</body>
+</html>

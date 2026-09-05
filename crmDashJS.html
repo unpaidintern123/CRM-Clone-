@@ -1,0 +1,547 @@
+<script>
+// ================================
+// CRM Dashboard - Unified JS File
+// ================================
+
+/* ========== Utility Functions ========== */
+function formatDateToYMD(date) {
+  const y = date.getFullYear(), m = String(date.getMonth()+1).padStart(2, '0'), d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function parseLeadDateString(s) {
+  if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s);
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  return m ? new Date(`${m[3]}-${m[2]}-${m[1]}`) : new Date(s);
+}
+
+function getTextWidth(text, font) {
+  const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
+  ctx.font = font;
+  return ctx.measureText(text).width;
+}
+
+function checkTextOverflow(textEl, containerEl) {
+  if (!textEl || !containerEl) return false;
+  const style = getComputedStyle(textEl), font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  return getTextWidth(textEl.textContent, font) > containerEl.clientWidth - 60;
+}
+
+/* ========== Sidebar & Spinner ========== */
+document.addEventListener('DOMContentLoaded', () => {
+  const sidebar = document.querySelector('.sidebar'), toggleBtn = document.querySelector('.sidebar-toggle');
+  if (sidebar) sidebar.classList.add('collapsed');
+  if (toggleBtn) toggleBtn.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+  initializeFilters();
+  updateFunnelDisplay();
+  updateConversionRatios();
+});
+
+
+/* ========== State & Data Fetching ========== */
+let allLeads = [], allConsultations = [], misDataPerson = [];
+
+if (typeof google !== 'undefined' && google.script) {
+  crmApi.invokeGas("retriveLeadData2").then(onLeadsFetched).catch((err) => console.error("retriveLeadData2 failed", err));
+}
+
+function onLeadsFetched(data) {
+  allLeads = JSON.parse(data);
+  crmApi.invokeGas("retriveConsData").then(onConsultationsFetched).catch((err) => console.error("retriveConsData failed", err));
+}
+
+function onConsultationsFetched(data) {
+  allConsultations = JSON.parse(data);
+  refreshDashboardForCurrentWeek();
+  crmApi.invokeGas("getLatestWeekEndData").then(onMisFetched).catch((err) => console.error("getLatestWeekEndData failed", err));
+  const spinner = document.getElementById('spinnerOverlay');
+  if (spinner) { spinner.style.opacity = '0'; spinner.style.visibility = 'hidden'; }
+}
+
+function onMisFetched(data) {
+  const misData = JSON.parse(data);
+  misDataPerson = misData.map(r => ({ name: r[0].toString().toLowerCase(), score: r[3] }));
+  console.log(misDataPerson);
+}
+
+/* ========== Date Helpers ========== */
+function getCurrentWeekRange() {
+  const today = new Date(), first = today.getDate() - today.getDay(),
+        sunday = new Date(today.setDate(first)), saturday = new Date(sunday.getTime() + 6 * 86400000);
+  sunday.setHours(0, 0, 0, 0);
+  saturday.setHours(23, 59, 59, 999);
+  return { start: sunday, end: saturday };
+}
+
+function filterByCriteria(start, end, person, city, platform) {
+  const inRange = lead => {
+    const d = parseLeadDateString(lead["lead date"]);
+    return d && d >= start && d <= end;
+  };
+
+  const inRangeConsultation = lead => {
+    const d = parseLeadDateString(lead["timestamp"]);
+    return d && d >= start && d <= end;
+  };
+
+  const match = lead => {
+    const crmMatch = person ? lead["assigned to"] === person : true;
+    const cityMatch = city ? (city === 'Others'
+      ? !["Mumbai", "Delhi", "Bangalore"].includes(lead.city)
+      : lead.city === city) : true;
+    const platformMatch = platform ? lead.platform === platform : true;
+    return inRange(lead) && crmMatch && cityMatch && platformMatch;
+  };
+
+  const matchConsultation = lead => {
+    const crmMatch = person ? lead["assigned to"] === person : true;
+    const cityMatch = city ? (city === 'Others'
+      ? !["Mumbai", "Delhi", "Bangalore"].includes(lead.city)
+      : lead.city === city) : true;
+    const platformMatch = platform ? lead.platform === platform : true;
+    return inRangeConsultation(lead) && crmMatch && cityMatch && platformMatch;
+  };
+
+  return {
+    leads: allLeads.filter(match),
+    consultations: allConsultations.filter(matchConsultation)
+  };
+}
+
+/* ========== Dashboard Rendering ========== */
+function refreshDashboardForCurrentWeek() {
+  const { start, end } = getCurrentWeekRange();
+  const { leads, consultations } = filterByCriteria(start, end, '', '', '');
+  updateDashboard(leads, consultations);
+}
+
+function updateDashboard(leads, consultations) {
+  const total = leads.length,
+        visited = leads.filter(l => l["lead status"] === "Consultation Visited").length,
+        contacted = leads.filter(l => !["Ringing / Busy","Not Reachable"].includes(l["lead status"])).length,
+        followup = leads.filter(l => ["Warm Lead","Cold Lead 1","Cold Lead 2","Deferred Lead","Ringing / Busy","Not Reachable"].includes(l["lead status"])).length,
+        lost = leads.filter(l => l["lead status"] === "Lost").length,
+        dead = leads.filter(l => l["lead status"] === "Dead").length,
+        booked = consultations.length;
+
+  setText("funnelNewLeads", total);
+  setText("funnelContacted", contacted);
+  setText("funnelBooked", booked);
+  setText("funnelVisited", visited);
+  setText("followUp", followup);
+  setText("lostLeads", lost);
+  setText("deadLeads", dead);
+
+const todaysDate = new Date();
+todaysDate.setHours(0, 0, 0, 0); // Set today's date to midnight (no time part)
+console.log(todaysDate)
+// Filter the leads where the "lead date" is less than or equal to today's date and the status is one of the specified ones
+const filteredAllPendingLeads = allLeads.filter(lead => {
+  const leadDate = new Date(lead["follow up date"]);
+
+ // Sanitize lead status (trim, case-insensitive check)
+  const validStatuses = ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy", "Not Reachable"];
+  const leadStatus = lead["lead status"]?.trim().toLowerCase();
+
+  // Check if the lead status is valid and the date condition is met
+  return leadDate <= todaysDate && validStatuses.some(status => status.toLowerCase() === leadStatus);
+});
+
+document.getElementById("pendingFollowup").textContent = filteredAllPendingLeads.length;
+
+ 
+  setHeaderConversion(total, booked);
+  updateMIS("scoreLeads", total, 100);
+  updateMIS("scoreConsultationBooked", booked, 70);
+
+  const conversionPercent = total ? (booked / total) * 100 : 0;
+  updateMIS("scoreConversionRatio", conversionPercent, 70);
+
+  updateMIS("scoreConsultationVisited", visited, 56);
+
+  const visitConversionPercent = booked ? (visited / booked) * 100 : 0;
+  updateMIS("scoreVisitConversion", visitConversionPercent, 80);
+
+  updateMISTable(total, booked, conversionPercent, visited, visitConversionPercent);
+
+  updateFunnelDisplay();
+  updateConversionRatios();
+  createPieChart(leads);
+  adjustCityFunnels(leads, consultations);
+}
+
+/* ========== UI Helpers ========== */
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = isNaN(value) ? value : Math.round(value);
+}
+
+function setHeaderConversion(total, booked) {
+  const el = document.getElementById("headerConversionRatio");
+  if (!el) return;
+  const conv = total ? Math.round((booked / total) * 100) : 0;
+  el.textContent = `${conv}%`;
+  el.className = conv >= 70 ? 'metric-value-compact positive' : 'metric-value-compact negative';
+}
+
+function updateMIS(id, actual, planned) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const score = (((actual / planned) * 100) - 100).toFixed(2);
+  el.textContent = `${score}%`;
+  el.className = score >= -5 ? 'score-value score-positive'
+                    : score >= -20 ? 'score-value score-neutral'
+                    : 'score-value score-negative';
+}
+
+function updateMISTable(total, booked, convPercent, visited, visitConvPercent) {
+  setText("actualLeads", total);
+  setText("actualCB", booked);
+  setText("actualConversion", `${convPercent.toFixed(2)}%`);
+  setText("actualCV", visited);
+  setText("actualConversionVisit", `${visitConvPercent.toFixed(2)}%`);
+}
+
+/* ========== Funnel Display ========== */
+function updateFunnelDisplay() {
+  const stages = [
+    { id: "funnelNewLeads", bar: "newLeadsBar", internal: "newLeadsInternal", external: "newLeadsExternal" },
+    { id: "funnelContacted", bar: "connectedBar", internal: "connectedInternal", external: "connectedExternal" },
+    { id: "funnelBooked", bar: "bookedBar", internal: "bookedInternal", external: "bookedExternal" },
+    { id: "funnelVisited", bar: "visitedBar", internal: "visitedInternal", external: "visitedExternal" }
+  ];
+
+  const values = stages.map(s => parseInt(document.getElementById(s.id)?.textContent) || 0);
+  const maxVal = Math.max(...values, 1);
+
+  stages.forEach((s, i) => {
+    const width = (values[i] / maxVal) * 100;
+    const bar = document.getElementById(s.bar);
+    if (bar) bar.style.width = `${width}%`;
+
+    const internal = document.getElementById(s.internal), external = document.getElementById(s.external);
+    if (internal && external) {
+      if (width > 30) { internal.classList.add("show"); external.classList.remove("show"); }
+      else { internal.classList.remove("show"); external.classList.add("show"); }
+    }
+  });
+}
+
+function updateConversionRatios() {
+  const a = parseInt(document.getElementById("funnelNewLeads").textContent) || 0,
+        b = parseInt(document.getElementById("funnelContacted").textContent) || 0,
+        c = parseInt(document.getElementById("funnelBooked").textContent) || 0;
+        d = parseInt(document.getElementById("funnelVisited").textContent) || 0;
+
+  setText("funnelContactedConversion", a ? `${Math.round((b / a) * 100)}%` : "0%");
+  setText("funnelBookedConversion", a ? `${Math.round((c / b) * 100)}%` : "0%");
+  setText("funnelVisitedConversion", a ? `${Math.round((d / c) * 100)}%` : "0%");
+}
+
+/* ========== City Funnel ========== */
+function adjustCityFunnels(leads, consultations) {
+  const cities = ["Mumbai","Delhi","Bangalore","Others"];
+  const stats = cities.reduce((acc, city) => ({ ...acc, [city]: { total:0, booked:0, visited:0 } }), {});
+
+  leads.forEach(l => {
+    const c = categorizeCity(l.city);
+    stats[c].total++;
+    if (l["lead status"] === "Consultation Visited") stats[c].visited++;
+  });
+
+  consultations.forEach((cn)=>{
+    if(cn["consultation type"] === "In-person"){
+      stats["Mumbai"].booked++;
+    }else if(cn["consultation type"] === "Delhi (In-person)"){
+      stats["Delhi"].booked++
+    }else if(cn["consultation type"] === "Bangalore (In-person)"){
+      stats["Bangalore"].booked++
+    }else{
+      stats["Others"].booked++
+    }
+  });
+
+  cities.forEach(city => {
+    const key = city.toLowerCase();
+    const { total, booked, visited } = stats[city];
+    const bookedPct = total ? (booked / total) * 100 : 0;
+    const visitedPct = total ? (visited / total) * 100 : 0;
+
+    setText(`${key}TotalLeads`, total);
+    setText(`${key}BookedLeads`, booked);
+    setText(`${key}VisitedLeads`, visited);
+
+    const bookedBar = document.getElementById(`${key}BookedBar`);
+    const visitedBar = document.getElementById(`${key}VisitedBar`);
+    if (bookedBar) bookedBar.style.width = `${Math.max(bookedPct, 15)}%`;
+    if (visitedBar) visitedBar.style.width = `${Math.max(visitedPct, 10)}%`;
+
+    toggleCityLabel(`${key}-booked`, bookedPct);
+    toggleCityLabel(`${key}-visited`, visitedPct);
+  });
+}
+
+function categorizeCity(c) {
+  if (!c) return "Others";
+  const lc = c.toString().toLowerCase();
+  if (lc.includes("mumbai") || lc.includes("bombay")) return "Mumbai";
+  if (lc.includes("delhi")) return "Delhi";
+  if (lc.includes("bangalore") || lc.includes("bengaluru")) return "Bangalore";
+  return "Others";
+}
+
+function toggleCityLabel(base, pct) {
+  const internal = document.querySelector(`.${base}-internal`),
+        external = document.querySelector(`.${base}-external`);
+  if (internal && external) {
+    if (pct < 30 || checkTextOverflow(internal, internal.parentElement.parentElement)) {
+      internal.classList.remove("show");
+      external.classList.add("show");
+    } else {
+      internal.classList.add("show");
+      external.classList.remove("show");
+    }
+  }
+}
+
+/* ========== Pie Chart ========== */
+function createPieChart(leads) {
+  const canvas = document.getElementById('pieChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const counts = {};
+  leads.forEach(l => {
+    const platform = l.platform || 'Unknown';
+    counts[platform] = (counts[platform] || 0) + 1;
+  });
+
+  const labels = Object.keys(counts),
+        data = Object.values(counts),
+        colors = ['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF','#FF9F40'];
+
+  if (window.leadSourceChart) window.leadSourceChart.destroy();
+
+  window.leadSourceChart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors.slice(0, labels.length),
+        borderColor: '#fff',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 12 }, usePointStyle: true }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = context.raw || 0;
+              return `${label}: ${value}`;
+            }
+          }
+        },
+        datalabels: {
+          display: function(context) {
+            const value = context.dataset.data[context.dataIndex];
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            return (value / total) > 0.15;
+          },
+          color: '#fff',
+          font: { weight: 'bold', size:14 },
+          formatter: function(value, context) {
+            const label = context.chart.data.labels[context.dataIndex];
+            return `${label}: ${value}`;
+          }
+        }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+}
+
+
+/* ========== Filter Logic ========== */
+function initializeFilters() {
+  const period = document.getElementById("period"),
+        startInput = document.getElementById("startDate"),
+        endInput = document.getElementById("endDate"),
+        applyBtn = document.getElementById("applyFilters"),
+        resetBtn = document.getElementById("resetFilter");
+
+  period?.addEventListener('change', () => {
+    const show = period.value === "Custom";
+    startInput.closest('.filter-compact')?.classList.toggle('hide', !show);
+    endInput.closest('.filter-compact')?.classList.toggle('hide', !show);
+    if(period.value === "Custom"){
+      document.querySelector(".dashboard-title").classList.add('hide');
+    }else{
+      document.querySelector(".dashboard-title").classList.remove('hide');
+    }
+  });
+
+  applyBtn?.addEventListener('click', () => {
+    let range = { start: new Date(), end: new Date() };
+    const now = getCurrentWeekRange(), val = period.value;
+
+    switch (val) {
+      case "Last Week": range = getOffsetWeek(-1); break;
+      case "Today": range = getSingleDate(0); break;
+      case "Yesterday": range = getSingleDate(-1); break;
+      case "Current Month": range = getMonthRange(0); break;
+      case "Last Month": range = getMonthRange(-1); break;
+      case "Custom":
+        if (!startInput.value || !endInput.value) return alert("Select dates.");
+        range.start = new Date(startInput.value);
+        range.start.setHours(0,0,0,0);
+        range.end = new Date(endInput.value);
+        range.end.setHours(23,59,59,999);
+        break;
+      default: range = now;
+    }
+
+    const person = document.getElementById("personNames").value,
+          city = document.getElementById("cityFilter").value,
+          pf = document.getElementById("platformFilter").value;
+    const { leads, consultations } = filterByCriteria(range.start, range.end, person, city, pf);
+
+    updateHeaderProfile(person);
+    updateDashboard(leads, consultations);
+    const todaysDate = new Date();
+    todaysDate.setHours(0, 0, 0, 0);
+
+
+if(person === ""){
+const filteredAllPendingLeads = allLeads.filter(lead => {
+  const leadDate = new Date(lead["follow up date"]);
+
+ // Sanitize lead status (trim, case-insensitive check)
+  const validStatuses = ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy", "Not Reachable"];
+  const leadStatus = lead["lead status"]?.trim().toLowerCase();
+
+  // Check if the lead status is valid and the date condition is met
+  return leadDate <= todaysDate && validStatuses.some(status => status.toLowerCase() === leadStatus);
+
+});
+document.getElementById("pendingFollowup").textContent = filteredAllPendingLeads.length;
+}else {
+  const filteredAllPendingLeads = allLeads.filter(lead => {
+  const leadDate = new Date(lead["follow up date"]);
+
+ // Sanitize lead status (trim, case-insensitive check)
+  const validStatuses = ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy", "Not Reachable"];
+  const leadStatus = lead["lead status"]?.trim().toLowerCase();
+
+  // Check if the lead status is valid and the date condition is met
+  return leadDate <= todaysDate && validStatuses.some(status => status.toLowerCase() === leadStatus) && lead["assigned to"] === person;
+
+});
+document.getElementById("pendingFollowup").textContent = filteredAllPendingLeads.length;
+}
+  });
+
+  resetBtn?.addEventListener('click', () => {
+    startInput.value = endInput.value = "";
+    period.value = "Current Week";
+    document.querySelectorAll('#startDate, #endDate').forEach(el => el.closest('.filter-compact')?.classList.add('hide'));
+    document.getElementById("personNames").value = "";
+    document.getElementById("cityFilter").value = "";
+    document.getElementById("platformFilter").value = "";
+    document.getElementById("headerMisScoring").textContent = "NaN";
+    document.getElementById("headerMisScoring").className = "metric-value-compact";
+    refreshDashboardForCurrentWeek();
+    updateHeaderProfile('');
+
+    const todaysDate = new Date();
+    todaysDate.setHours(0, 0, 0, 0);
+    const filteredAllPendingLeads = allLeads.filter(lead => {
+    const leadDate = new Date(lead["follow up date"]);
+    
+    // Sanitize lead status (trim, case-insensitive check)
+    const validStatuses = ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy", "Not Reachable"];
+    const leadStatus = lead["lead status"]?.trim().toLowerCase();
+    
+    // Check if the lead status is valid and the date condition is met
+    return leadDate <= todaysDate && validStatuses.some(status=> status.toLowerCase() === leadStatus);
+    
+      });
+      document.getElementById("pendingFollowup").textContent = filteredAllPendingLeads.length;
+  });
+}
+
+function getOffsetWeek(offset) {
+  const w = getCurrentWeekRange();
+  w.start.setDate(w.start.getDate() + offset * 7);
+  w.end.setDate(w.end.getDate() + offset * 7);
+  return w;
+}
+
+function getSingleDate(offset) {
+  const d = new Date(); d.setDate(d.getDate()+offset);
+  d.setHours(0,0,0,0); const e = new Date(d); e.setHours(23,59,59,999);
+  return { start: d, end: e };
+}
+
+function getMonthRange(offset) {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth() + offset;
+  const s = new Date(y, m, 1, 0,0,0,0), e = new Date(y, m+1, 0, 23,59,59,999);
+  return { start: s, end: e };
+}
+
+/* ========== Profile Header Updates ========== */
+function updateHeaderProfile(person) {
+  const imgUrls = {
+    rahul: 'https://lh3.googleusercontent.com/d/18isY2bArhNWZOQIaogJtSCgpMr_k-wQN=s200',
+    sharin: 'https://lh3.googleusercontent.com/d/1VoEMZcmbGGdoeeXRm0Yt7uQy1zMq5iZa=s200',
+    all: 'https://lh3.googleusercontent.com/d/1AJNywxCx-Q7UIn0M7gYHpyIPUBn6cp10=s200'
+  };
+  const nameKey = person.toLowerCase() || 'all';
+  const photo = imgUrls[nameKey] || imgUrls['all'];
+
+  const iconEl = document.getElementById('headerProfileIcon'),
+        nameEl = document.getElementById('headerProfileName'),
+        roleEl = document.getElementById('headerProfileDesignation'),
+        misEl = document.getElementById('headerMisScoring');
+
+  nameEl.textContent = person || 'All';
+  roleEl.textContent = 'CRM Executive';
+  if (iconEl) iconEl.innerHTML = `<img src="${photo}" alt="Profile">`;
+
+  if (!person) {
+    misEl.textContent = 'NaN';
+    misEl.className = 'metric-value-compact';
+    return;
+  }
+
+  const pdata = misDataPerson.find(p => p.name === person.toLowerCase());
+  console.log("Person Found :")
+  console.log(pdata)
+  if (pdata) {
+    const scorePct = pdata.score * 100;
+    misEl.textContent = `${scorePct.toFixed(0)}%`;
+    misEl.className = scorePct >= -5 ? 'metric-value-compact positive'
+                        : scorePct >= -20 ? 'metric-value-compact neutral'
+                                         : 'metric-value-compact negative';
+  }else {
+    misEl.textContent = 'NaN';
+    misEl.className = 'metric-value-compact';
+  }
+}
+
+/* ========== Error Handling ========== */
+window.addEventListener('error', e => {
+  console.error('Dashboard Error:', e.message);
+  const spinner = document.getElementById('spinnerOverlay');
+  if (spinner) { spinner.style.opacity = '0'; spinner.style.visibility = 'hidden'; }
+});
+
+</script>

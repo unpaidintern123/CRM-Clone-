@@ -1,0 +1,94 @@
+<script>
+const searchBtn = document.getElementById("searchBtn");
+searchBtn.addEventListener("click",()=>{
+
+const campaignNameVal = document.getElementById("campaignName").value;
+const adNameVal = document.getElementById("adName").value;
+const adSetNameVal = document.getElementById("adSetName").value;
+const leadPlatformVal = document.getElementById("leadPlatform").value;
+const platformVal = document.getElementById("platform").value;
+const cityVal = document.getElementById("city").value;
+const placementVal = document.getElementById("placement").value;
+const leadStatusVal = document.getElementById("leadStatus").value;
+const startDateVal = document.getElementById("startDate").value;
+const endDateVal = document.getElementById("endDate").value;
+// console.log(adNameVal);
+
+if(!startDateVal || !endDateVal ){
+  alert("Please select both start and end dates.")
+  return
+}
+
+const newStartDate = new Date(startDateVal + "T00:00:00");
+const newEndDate = new Date(endDateVal + "T23:59:00");
+
+const filteredData = allParsedLeads.filter((lead)=>{
+  const leadDate = new Date(lead["lead date"]);
+  const isDateMatch = leadDate >= newStartDate && leadDate <= newEndDate;
+  const isCampaignNameMatch = campaignNameVal === "" ? true : lead["campaignname"] === campaignNameVal;
+  const isadNameMatch = adNameVal === "" ? true : lead["adname"] === adNameVal;
+  const isadSetNameMatch = adSetNameVal === "" ? true : lead["adsetname"] === adSetNameVal;
+  const isLeadPlatformMatch = leadPlatformVal === "" ? true : lead["platform"] === leadPlatformVal;
+  const isPlatformMatch = platformVal === "" ? true : lead["campaignsource"] === platformVal;
+  const isCityMatch = cityVal === "" ? true : lead["city"] === cityVal;
+  const isPlacementMatch = placementVal === "" ? true : lead["placement"] === placementVal;
+  const isLeadStatusMatch = leadStatusVal === "" ? true : lead["lead status"] === leadStatusVal;
+
+  return isDateMatch && isCampaignNameMatch && isadNameMatch && isadSetNameMatch && isLeadPlatformMatch && isPlatformMatch && isCityMatch && isPlacementMatch && isLeadStatusMatch
+  })
+  document.getElementById("filteredLeadCount").textContent = filteredData.length;
+
+  const filteredAdName = [...new Set(filteredData.map(lead => lead["adname"]))]
+  populateAdName(filteredAdName);
+  document.getElementById("adName").value = adNameVal;
+
+  const filteredAdSetName = [...new Set(filteredData.map(lead => lead["adsetname"]))]
+  populateAdSetName(filteredAdSetName);
+  document.getElementById("adSetName").value = adSetNameVal;
+
+  const filteredPlatformName = [...new Set(filteredData.map(lead => lead["campaignsource"]))]
+  populatePlatform(filteredPlatformName);
+  document.getElementById("platform").value = platformVal;
+
+  const filteredPlacementName = [...new Set(filteredData.map(lead => lead["placement"]))]
+  populatePlacement(filteredPlacementName);
+  document.getElementById("placement").value = placementVal;
+
+
+  fillTheTable(filteredData);
+  
+ 
+})
+// Reset Button Functionality
+    document.getElementById('resetBtn').addEventListener('click', function() {
+    // Show loading state
+    loadingOverlay.style.display = 'flex';
+    // Reset all form fields
+    document.querySelectorAll('input, select').forEach(field => {
+    if (field.type === 'text' || field.type === 'date') {
+    field.value = '';
+    } else if (field.type === 'select-one') {
+    field.selectedIndex = 0;
+    }
+    });
+    
+    populateCampaignName(allDropDownData.campaignNames);
+    populateAdName(allDropDownData.adNames);
+    populatePlatform(allDropDownData.platforms);
+    populatePlacement(allDropDownData.placements);
+    populateAdSetName(allDropDownData.adSetNames);
+    fillTheTable(allParsedLeads);
+    document.getElementById("filteredLeadCount").textContent = allParsedLeads.length;
+        
+    // Simulate search operation
+    setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+                console.log('fitler reset');
+                // Here you would typically make an API call to fetch filtered data
+    }, 1500);
+    
+    });
+
+</script>
+
+

@@ -1,0 +1,194 @@
+<script>
+const leadInfoForm = document.querySelector(".lead-info-form");
+const allResponse = document.querySelectorAll(".response");
+const leadResponseDatabase = {}
+const confirmationPopUp = document.querySelector(".confirmation-popup");
+const updateButton = document.querySelector(".btn-update");
+const btnYes = document.querySelector(".btn-yes");
+const btnNo = document.querySelector(".btn-no");
+const confirmationText = document.querySelector(".confirmation-text");
+//For Consultation Visit Disable Logic
+let leadStatus = document.getElementById('leadStatus');
+let consultationVisitedOption = leadStatus.querySelector('option[value="Consultation Visited"]');
+
+
+leadInfoForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  confirmationPopUp.classList.remove("hide");
+});
+
+btnYes.addEventListener("click",()=>{
+  btnYes.style.display = "none";    
+  btnNo.style.display = "none";  
+  confirmationText.style.display = "block";
+  confirmationText.textContent = "⏳ Please wait while your lead is being updated...";
+  submitLeadForm();
+
+})
+
+btnNo.addEventListener("click",()=>{
+  confirmationPopUp.classList.add("hide");
+})
+
+function submitLeadForm() {
+  // Clear previous data
+  Object.keys(leadResponseDatabase).forEach(key => delete leadResponseDatabase[key]);
+
+  //For Consultation Visit Disable Logic
+  if (leadStatus.value === 'Consultation Visited') {
+    // Enable the option temporarily
+    consultationVisitedOption.disabled = false;
+  }
+
+  // Handle form inputs
+  const formData = new FormData(leadInfoForm);
+  for (let [key, value] of formData.entries()) {
+    leadResponseDatabase[key] = value;
+  }
+
+//correct Date format
+leadResponseDatabase.leadDate = getLocalDatetimeString(document.getElementById("leadDate"));
+leadResponseDatabase.followUpDate = getLocalDatetimeString(document.getElementById("followUpDate"));
+leadResponseDatabase.consutlationBookedDate = getLocalDatetimeString(document.getElementById("consutlationBookedDate"));
+leadResponseDatabase.consutlationVisitedDate = getLocalDatetimeString(document.getElementById("consutlationVisitedDate"));
+console.log(leadResponseDatabase);
+
+  crmApi.invokeGas("updateLeadDetails", leadResponseDatabase)
+    .then(onSuccess)
+    .catch((err) => {
+      console.error("updateLeadDetails failed", err);
+      confirmationText.textContent = "Failed to update lead. Please try again.";
+      btnYes.style.display = "block";
+      btnNo.style.display = "block";
+    });
+}
+
+function getLocalDatetimeString(inputElement) {
+  return inputElement.value || "";
+}
+
+
+
+function onSuccess(serverRes){
+const isLegacyPayload = typeof serverRes === "string";
+if (isLegacyPayload) {
+  allLeadData = JSON.parse(serverRes);
+} else if (serverRes && serverRes.updatedLead) {
+  const updatedLeadLegacy = {
+    "lead date": serverRes.updatedLead.leadDate || "",
+    "lead unique id": serverRes.updatedLead.leadUniqueId || "",
+    "client name": serverRes.updatedLead.clientName || "",
+    "mobile no": serverRes.updatedLead.mobileNo || "",
+    "secondary mobile no": serverRes.updatedLead.secondaryMobileNo || "",
+    "city": serverRes.updatedLead.city || "",
+    "town": serverRes.updatedLead.town || "",
+    "call type": serverRes.updatedLead.callType || "",
+    "platform": serverRes.updatedLead.platform || "",
+    "lead status": serverRes.updatedLead.leadStatus || "",
+    "rating": serverRes.updatedLead.rating || "",
+    "assigned to": serverRes.updatedLead.assignedTo || "",
+    "interested in": serverRes.updatedLead.interestedIn || "",
+    "follow up date": serverRes.updatedLead.followUpDate || "",
+    "no of follow ups": serverRes.updatedLead.noOfFollowups || 0,
+    "consultation booked date": serverRes.updatedLead.consutlationBookedDate || "",
+    "consultation visited date": serverRes.updatedLead.consutlationVisitedDate || "",
+    "consultation type": serverRes.updatedLead.consultationType || "",
+    "consultation status": serverRes.updatedLead.consultationStatus || "",
+    "initial remark": serverRes.updatedLead.initialRemark || "",
+    "detail comment": serverRes.updatedLead.detailComment || "",
+    "how soon are you looking for solution?": serverRes.updatedLead.Q1 || "",
+    "do you have a budget in mind?": serverRes.updatedLead.Q2 || "",
+    "willing to visit to the center?": serverRes.updatedLead.Q3 || "",
+    "how did you hear about us?": serverRes.updatedLead.hearAboutUs || "",
+    "order booked status": serverRes.updatedLead.orderStatus || "",
+    "sales amount": serverRes.updatedLead.totalSalesAmount || "",
+    "not booked feedback": serverRes.updatedLead.notBookedFeedback || "",
+    "order date": serverRes.updatedLead.orderDate || "",
+  };
+  const idx = allLeadData.findIndex((lead) => lead["lead unique id"] === updatedLeadLegacy["lead unique id"]);
+  if (idx >= 0) {
+    allLeadData[idx] = { ...allLeadData[idx], ...updatedLeadLegacy };
+  } else {
+    allLeadData.unshift(updatedLeadLegacy);
+  }
+}
+console.log("Data added sucessfully!!")
+// console.log(allLeadData);
+
+//For Consultation Visit Disable Logic
+consultationVisitedOption.disabled = true;
+
+const updatedId = leadResponseDatabase["leadUniqueId"];
+const updatedLead = allLeadData.find(lead => lead["lead unique id"] === updatedId);
+
+if(updatedLead){
+  populateLeadForm(updatedLead);
+  
+}
+
+ const activeStageBtn = document.querySelector(".stage-btn.active");
+
+  if (activeStageBtn && activeStageBtn.classList.contains("new-lead")) {
+    makeLeadCard(allLeadData.filter(lead => lead["lead status"] === "New Lead" && lead["assigned to"] === loggedUser.username));
+  }
+  if (activeStageBtn && activeStageBtn.classList.contains("followup-stage")) {
+    makeLeadCard(allLeadData.filter(lead => {
+      const leadDate = new Date(lead["follow up date"]);
+       let isDateMatch = null;
+      const dateFilterVal = document.getElementById("dateFilter").value;
+        if(dateFilterVal === "Today"){
+          const todayStartD = new Date(new Date().toISOString().split('T')[0] + "T00:00:00");
+          const todayEndD = new Date(new Date().toISOString().split('T')[0] + "T23:59:00");
+          isDateMatch = leadDate >= todayStartD && leadDate <= todayEndD;
+          }else if(dateFilterVal === "Past") {
+              const todayStartD = new Date(new Date().toISOString().split('T')[0] + "T00:00:00");
+              const todayEndD = new Date(new Date().toISOString().split('T')[0] + "T23:59:00");
+              isDateMatch = leadDate <= todayStartD;
+          }else {
+              isDateMatch = leadDate >= startDate && leadDate <= endDate;
+          }
+    return isDateMatch && ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username}));
+    
+  }
+   if (activeStageBtn && activeStageBtn.classList.contains("consultation-booked")) {
+    makeLeadCard(allLeadData.filter(lead => ["Consultation Booked"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username));
+  }
+  if (activeStageBtn && activeStageBtn.classList.contains("consultation-visited")) {
+    makeLeadCard(allLeadData.filter(lead => lead["lead status"] === "Consultation Visited" && lead["assigned to"] === loggedUser.username));
+  }
+  if (activeStageBtn && activeStageBtn.classList.contains("lost-stage")) {
+    makeLeadCard(allLeadData.filter(lead => ["Lost", "Dead","Not Visited Lost"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username));
+  }
+  if (activeStageBtn && activeStageBtn.classList.contains("all-stage")) {
+    makeLeadCard(allLeadData.filter(lead => lead["assigned to"] === loggedUser.username));
+  }
+
+confirmationText.textContent = "Lead Updated Successfully 🚀"
+
+  setTimeout(()=>{
+    confirmationPopUp.classList.add("hide");
+    confirmationText.style.display = "none";
+    btnYes.style.display = "block";    
+    btnNo.style.display = "block";
+  }, 1500)
+
+setTimeout(()=>{
+  const matchingCard = document.querySelector(`.lead-card[data-id="${updatedId}"]`)
+  if (matchingCard) {
+  matchingCard.click();
+}
+},500)
+
+updateStageCounts();
+
+}
+</script>
+
+
+
+
+
+
+
+
+
