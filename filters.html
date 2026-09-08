@@ -7,6 +7,7 @@ const endDateVal = document.getElementById("endDate").value;
 const cityVal = document.getElementById("cityFilter").value.toString().trim().toLowerCase();
 const statusVal = document.getElementById("statusFilter").value.trim().toLowerCase();
 const platformVal = document.getElementById("platformFilter").value.trim().toLowerCase();
+const priorityVal = document.getElementById("leadPriorityFilter").value;
 const contactNoVal = Number(document.getElementById("contactNoFilter").value);
 const dateFilterVal = document.getElementById("dateFilter").value;
 const activeStageBtn = document.querySelector(".stage-btn.active");
@@ -46,7 +47,7 @@ if(activeStageBtn && activeStageBtn.classList.contains("followup-stage")) {
     const isPlatformMatch = platformVal === "" || (lead["platform"] && lead["platform"].toLowerCase() === platformVal);
     statusVal.value = "";
 
-    return lead["lead status"] === "New Lead" && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch;
+    return lead["lead status"] === "New Lead" && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isLeadPriorityMatch(lead, priorityVal);
   }));
 
   // Count Fitlered New Lead
@@ -59,7 +60,7 @@ if(activeStageBtn && activeStageBtn.classList.contains("followup-stage")) {
     const isPlatformMatch = platformVal === "" || (lead["platform"] && lead["platform"].toLowerCase() === platformVal);
     statusVal.value = "";
 
-    return lead["lead status"] === "New Lead" && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch;
+    return lead["lead status"] === "New Lead" && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isLeadPriorityMatch(lead, priorityVal);
   }).length;
 
   //-->
@@ -83,7 +84,7 @@ if(activeStageBtn && activeStageBtn.classList.contains("followup-stage")) {
     const isContactMatch = true; 
     const isStatusMatch = statusVal === "" || (lead["lead status"] && lead["lead status"].toLowerCase() === statusVal);
     const isPlatformMatch = platformVal === "" || (lead["platform"] && lead["platform"].toLowerCase() === platformVal); 
-    return ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch; 
+    return ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isLeadPriorityMatch(lead, priorityVal); 
     })); 
 
     //Count Follow Up
@@ -105,7 +106,7 @@ if(activeStageBtn && activeStageBtn.classList.contains("followup-stage")) {
     const isContactMatch = true; 
     const isStatusMatch = statusVal === "" || (lead["lead status"] && lead["lead status"].toLowerCase() === statusVal);
     const isPlatformMatch = platformVal === "" || (lead["platform"] && lead["platform"].toLowerCase() === platformVal); 
-    return ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch; 
+    return ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isLeadPriorityMatch(lead, priorityVal); 
     }).length
 
     //-->
@@ -119,7 +120,7 @@ if(activeStageBtn && activeStageBtn.classList.contains("followup-stage")) {
     const isStatusMatch = true;
     const isPlatformMatch = platformVal === "" || (lead["platform"] && lead["platform"].toLowerCase() === platformVal);
     statusVal.value = "";
-    return ["Consultation Booked"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch;
+    return ["Consultation Booked"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isLeadPriorityMatch(lead, priorityVal);
       
     }));
 
@@ -133,7 +134,7 @@ if(activeStageBtn && activeStageBtn.classList.contains("followup-stage")) {
     const isStatusMatch = true;
     const isPlatformMatch = platformVal === "" || (lead["platform"] && lead["platform"].toLowerCase() === platformVal);
     statusVal.value = "";
-    return ["Consultation Booked"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch;
+    return ["Consultation Booked"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isLeadPriorityMatch(lead, priorityVal);
       
     }).length
 
@@ -151,7 +152,7 @@ if(activeStageBtn && activeStageBtn.classList.contains("followup-stage")) {
     statusVal.value = "";
     const isOrderStatusMatched = orderStatutsVal === "" ? true : orderStatutsVal === "not filled" ? (lead["order booked status"] === "") : (lead["order booked status"].trim().toLowerCase() === orderStatutsVal);
 
-    return lead["lead status"] === "Consultation Visited" && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isOrderStatusMatched;
+    return lead["lead status"] === "Consultation Visited" && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isOrderStatusMatched && isLeadPriorityMatch(lead, priorityVal);
     
     }))
 
@@ -167,7 +168,7 @@ if(activeStageBtn && activeStageBtn.classList.contains("followup-stage")) {
     statusVal.value = "";
     const isOrderStatusMatched = orderStatutsVal === "" ? true : orderStatutsVal === "notfilled" ? (lead["order booked status"] === "") : (lead["order booked status"].trim().toLowerCase() === orderStatutsVal);
 
-    return lead["lead status"] === "Consultation Visited" && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isOrderStatusMatched;
+    return lead["lead status"] === "Consultation Visited" && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isOrderStatusMatched && isLeadPriorityMatch(lead, priorityVal);
     
     }).length;
 
@@ -183,7 +184,7 @@ if(activeStageBtn && activeStageBtn.classList.contains("followup-stage")) {
     const isPlatformMatch = platformVal === "" || (lead["platform"] && lead["platform"].toLowerCase() === platformVal);
     statusVal.value = "";
 
-    return ["Lost", "Dead","Not Visited Lost"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch;
+    return ["Lost", "Dead","Not Visited Lost"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isLeadPriorityMatch(lead, priorityVal);
       
   }));
 
@@ -198,7 +199,7 @@ if(activeStageBtn && activeStageBtn.classList.contains("followup-stage")) {
     const isPlatformMatch = platformVal === "" || (lead["platform"] && lead["platform"].toLowerCase() === platformVal);
     statusVal.value = "";
 
-    return ["Lost", "Dead","Not Visited Lost"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch;
+    return ["Lost", "Dead","Not Visited Lost"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isLeadPriorityMatch(lead, priorityVal);
       
   }).length
 
@@ -215,7 +216,7 @@ if(activeStageBtn && activeStageBtn.classList.contains("followup-stage")) {
     const isPlatformMatch = platformVal === "" || (lead["platform"] && lead["platform"].toLowerCase() === platformVal);
     statusVal.value = "";
     
-    return lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch;
+    return lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isLeadPriorityMatch(lead, priorityVal);
   }));
 
   //Count all
@@ -228,12 +229,15 @@ if(activeStageBtn && activeStageBtn.classList.contains("followup-stage")) {
     const isPlatformMatch = platformVal === "" || (lead["platform"] && lead["platform"].toLowerCase() === platformVal);
     statusVal.value = "";
     
-    return lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch;
+    return lead["assigned to"] === loggedUser.username && isDateMatch && isCityMatch && isContactMatch && isStatusMatch && isPlatformMatch && isLeadPriorityMatch(lead, priorityVal);
   }).length
 
   //-->
 
   }
+
+  // Keep every stage count in sync with the currently active filters (incl. Lead Priority)
+  refreshAllStageCounts(cityVal, statusVal, platformVal, priorityVal, contactNoVal, dateFilterVal, orderStatutsVal, startDate, endDate);
 
 
    setTimeout(()=>{
@@ -252,6 +256,7 @@ resetFilterbtn.addEventListener("click",()=>{
   document.getElementById("cityFilter").value = "";
   document.getElementById("statusFilter").value = "";
   document.getElementById("platformFilter").value = "";
+  document.getElementById("leadPriorityFilter").value = "";
   document.getElementById("contactNoFilter").value = "";
   document.getElementById("orderStatusFilter").value = "";
   // document.getElementById("dateFilter").value = "";
@@ -307,6 +312,76 @@ resetFilterbtn.addEventListener("click",()=>{
  },100)
 
 })
+
+function isLeadPriorityMatch(lead, selectedPriority) {
+  if (selectedPriority === "") return true;
+  return lead["lead label"] === selectedPriority;
+}
+
+// Recomputes all stage counts (All / New Lead / Follow Stage / Consultation Booked /
+// Consultation Visited / Lost) using the same active filters as the card list, so the
+// non-active stage buttons never keep stale overall counts. Mirrors each stage's
+// existing per-branch predicate above; no counts are hard-coded.
+function refreshAllStageCounts(cityVal, statusVal, platformVal, priorityVal, contactNoVal, dateFilterVal, orderStatutsVal, startDate, endDate) {
+  const priorityFilteredLeadData = allLeadData.filter(lead => isLeadPriorityMatch(lead, priorityVal));
+  const isAllStageActive = document.querySelector(".stage-btn.active")?.classList.contains("all-stage");
+  const hasRange = startDate instanceof Date && !isNaN(startDate) && endDate instanceof Date && !isNaN(endDate);
+  const mine = lead => lead["assigned to"] === loggedUser.username;
+  const cityOf = lead => cityVal === "" || (lead["city"] && lead["city"].toString().toLowerCase().includes(cityVal));
+  const platformOf = lead => platformVal === "" || (lead["platform"] && lead["platform"].toLowerCase() === platformVal);
+  const statusOf = lead => statusVal === "" || (lead["lead status"] && lead["lead status"].toLowerCase() === statusVal);
+  const rangeOf = leadDate => hasRange ? (leadDate >= startDate && leadDate <= endDate) : true;
+
+  // New Lead
+  newLeadBtn.querySelector(".count").textContent = priorityFilteredLeadData.filter(lead => {
+    const isDateMatch = rangeOf(new Date(lead["lead date"]));
+    return lead["lead status"] === "New Lead" && mine(lead) && isDateMatch && cityOf(lead) && platformOf(lead) && isLeadPriorityMatch(lead, priorityVal);
+  }).length;
+
+  // Follow Up Stage
+  followupBtn.querySelector(".count").textContent = priorityFilteredLeadData.filter(lead => {
+    const leadDate = new Date(lead["follow up date"]);
+    let isDateMatch;
+    if (isAllStageActive) {
+      isDateMatch = true;
+    } else if (dateFilterVal === "Today") {
+      const todayStartD = new Date(new Date().toISOString().split('T')[0] + "T00:00:00");
+      const todayEndD = new Date(new Date().toISOString().split('T')[0] + "T23:59:00");
+      isDateMatch = leadDate >= todayStartD && leadDate <= todayEndD;
+    } else if (dateFilterVal === "Past") {
+      const todayStartD = new Date(new Date().toISOString().split('T')[0] + "T00:00:00");
+      isDateMatch = leadDate <= todayStartD;
+    } else {
+      isDateMatch = rangeOf(leadDate);
+    }
+    return ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy", "Not Reachable"].includes(lead["lead status"]) && mine(lead) && isDateMatch && cityOf(lead) && statusOf(lead) && platformOf(lead) && isLeadPriorityMatch(lead, priorityVal);
+  }).length;
+
+  // Consultation Booked
+  consultationBtn.querySelector(".count").textContent = priorityFilteredLeadData.filter(lead => {
+    const isDateMatch = rangeOf(new Date(lead["consultation booked date"]));
+    return ["Consultation Booked"].includes(lead["lead status"]) && mine(lead) && isDateMatch && cityOf(lead) && platformOf(lead) && isLeadPriorityMatch(lead, priorityVal);
+  }).length;
+
+  // Consultation Visited
+  consultationVisitedBtn.querySelector(".count").textContent = priorityFilteredLeadData.filter(lead => {
+    const isDateMatch = rangeOf(new Date(lead["consultation visited date"]));
+    const isOrderStatusMatched = orderStatutsVal === "" ? true : orderStatutsVal === "not filled" ? (lead["order booked status"] === "") : (lead["order booked status"].trim().toLowerCase() === orderStatutsVal);
+    return lead["lead status"] === "Consultation Visited" && mine(lead) && isDateMatch && cityOf(lead) && platformOf(lead) && isOrderStatusMatched && isLeadPriorityMatch(lead, priorityVal);
+  }).length;
+
+  // Lost
+  lostBtn.querySelector(".count").textContent = priorityFilteredLeadData.filter(lead => {
+    const isDateMatch = rangeOf(new Date(lead["follow up date"]));
+    return ["Lost", "Dead", "Not Visited Lost"].includes(lead["lead status"]) && mine(lead) && isDateMatch && cityOf(lead) && statusOf(lead) && platformOf(lead) && isLeadPriorityMatch(lead, priorityVal);
+  }).length;
+
+  // All
+  allBtn.querySelector(".count").textContent = priorityFilteredLeadData.filter(lead => {
+    const isContactMatch = contactNoVal === 0 || contactNoVal === "" || lead["mobile no"] == contactNoVal;
+    return mine(lead) && cityOf(lead) && isContactMatch && platformOf(lead) && isLeadPriorityMatch(lead, priorityVal);
+  }).length;
+}
 
 
 

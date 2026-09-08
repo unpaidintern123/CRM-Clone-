@@ -1,5 +1,7 @@
 {
   "timeZone": "Asia/Kolkata",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
   "dependencies": {
     "libraries": [
       {
@@ -10,8 +12,8 @@
       },
       {
         "userSymbol": "whatsappGallabox",
-        "libraryId": "1hfTEZqBloVzANDSyn2Q3pvGVmpvTHip-pCjnF3CPdYzftc9LBZeo_cCC",
         "version": "0",
+        "libraryId": "1hfTEZqBloVzANDSyn2Q3pvGVmpvTHip-pCjnF3CPdYzftc9LBZeo_cCC",
         "developmentMode": true
       }
     ]
@@ -19,7 +21,5 @@
   "webapp": {
     "executeAs": "USER_DEPLOYING",
     "access": "ANYONE_ANONYMOUS"
-  },
-  "exceptionLogging": "STACKDRIVER",
-  "runtimeVersion": "V8"
+  }
 }

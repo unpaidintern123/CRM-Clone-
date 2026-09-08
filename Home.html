@@ -162,6 +162,82 @@
                 </select>
               </div>
 
+              <div class="filter-group">
+                <label for="leadPriorityFilterTrigger">Lead Priority:</label>
+                <div class="priority-select" id="leadPriorityFilterSelect">
+                  <select id="leadPriorityFilter" class="priority-select-native" tabindex="-1" aria-hidden="true">
+                    <option value="">All</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                  <button type="button" id="leadPriorityFilterTrigger" class="priority-select-trigger" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="priority-select-value">All</span>
+                    <span class="priority-select-caret"></span>
+                  </button>
+                  <ul class="priority-select-options" id="leadPriorityFilterOptions" role="listbox" hidden>
+                    <li class="priority-select-option is-selected" role="option" aria-selected="true" data-value="">All</li>
+                    <li class="priority-select-option" role="option" aria-selected="false" data-value="High"><span class="priority-dot priority-dot-high"></span>High</li>
+                    <li class="priority-select-option" role="option" aria-selected="false" data-value="Medium"><span class="priority-dot priority-dot-medium"></span>Medium</li>
+                    <li class="priority-select-option" role="option" aria-selected="false" data-value="Low"><span class="priority-dot priority-dot-low"></span>Low</li>
+                  </ul>
+                </div>
+              </div>
+              <script>
+              (function() {
+                var select = document.getElementById("leadPriorityFilter");
+                var trigger = document.getElementById("leadPriorityFilterTrigger");
+                var options = document.getElementById("leadPriorityFilterOptions");
+                var wrap = document.getElementById("leadPriorityFilterSelect");
+                var valueLabel = trigger.querySelector(".priority-select-value");
+                var optionEls = options.querySelectorAll(".priority-select-option");
+
+                function closeOptions() {
+                  options.hidden = true;
+                  trigger.setAttribute("aria-expanded", "false");
+                }
+
+                function openOptions() {
+                  options.hidden = false;
+                  trigger.setAttribute("aria-expanded", "true");
+                }
+
+                trigger.addEventListener("click", function(e) {
+                  e.stopPropagation();
+                  if (options.hidden) { openOptions(); } else { closeOptions(); }
+                });
+
+                Array.prototype.forEach.call(optionEls, function(li) {
+                  li.addEventListener("click", function() {
+                    var val = li.getAttribute("data-value");
+                    select.value = val;
+                    valueLabel.textContent = li.textContent.trim();
+                    Array.prototype.forEach.call(optionEls, function(opt) {
+                      opt.classList.remove("is-selected");
+                      opt.setAttribute("aria-selected", "false");
+                    });
+                    li.classList.add("is-selected");
+                    li.setAttribute("aria-selected", "true");
+                    closeOptions();
+                  });
+                });
+
+                document.addEventListener("click", function(e) {
+                  if (!wrap.contains(e.target)) { closeOptions(); }
+
+                  if (e.target.closest && e.target.closest(".btn-reset-filters")) {
+                    var current = select.value;
+                    Array.prototype.forEach.call(optionEls, function(opt) {
+                      var isMatch = opt.getAttribute("data-value") === current;
+                      opt.classList.toggle("is-selected", isMatch);
+                      opt.setAttribute("aria-selected", isMatch ? "true" : "false");
+                      if (isMatch) { valueLabel.textContent = opt.textContent.trim(); }
+                    });
+                  }
+                });
+              })();
+              </script>
+
               <div class="filter-group hide">
                 <label for="orderStatusFilter">Order Status: </label>
                 <select id="orderStatusFilter">
@@ -213,6 +289,17 @@
                                 <span class="badge-label">Preferred Time To Call</span>
                                 <span class="badge-time" id="preferredCallTime">10:00 AM - 12:00 PM</span>
                             </div>
+                        </div>
+                        <div class="lead-priority-control">
+                            <label for="leadPriority">Lead Priority</label>
+                            <select id="leadPriority">
+                                <option value="">No Priority</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                            <button type="button" id="leadPriorityConfirm" class="lead-priority-btn confirm" title="Confirm priority change">&#10003;</button>
+                            <button type="button" id="leadPriorityCancel" class="lead-priority-btn cancel" title="Cancel priority change">&#10005;</button>
                         </div>
                     </div>
                     

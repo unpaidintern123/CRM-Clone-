@@ -38,6 +38,8 @@ function formatDate(input) {
 // Populate Form Function 
 
 function populateLeadForm(lead){
+  document.getElementById("leadPriority").value = lead["lead label"] || "";
+  clearLeadPriorityPending();
   //Set Lead Date
   const leadDate = document.getElementById("leadDate");
   leadDate.value = (() => { 
@@ -342,9 +344,10 @@ if (isFollowUpStage || isConsultationStage) {
     );
 
     const dateForLead = getRelevantDate(lead);
+    const priorityClass = getLeadPriorityClass(lead["lead label"]);
 
     return `
-      <div class="lead-card" data-index="${index}" data-id="${lead["lead unique id"]}">
+      <div class="lead-card ${priorityClass}" data-index="${index}" data-id="${lead["lead unique id"]}">
         <h3>${lead["client name"]}</h3>
         <div class="lead-info">${phone}</div>
         <div class="lead-info">${location}</div>
@@ -375,6 +378,98 @@ if (isFollowUpStage || isConsultationStage) {
   });
 
 }
+
+function getLeadPriorityClass(priorityValue) {
+  const normalizedPriority = (priorityValue || "").toString().trim().toLowerCase();
+  const priorityMap = {
+    high: "priority-high",
+    medium: "priority-medium",
+    low: "priority-low"
+  };
+
+  return priorityMap[normalizedPriority] || "";
+}
+
+const leadPriorityEl = document.getElementById("leadPriority");
+const leadPriorityConfirmBtn = document.getElementById("leadPriorityConfirm");
+const leadPriorityCancelBtn = document.getElementById("leadPriorityCancel");
+const leadPriorityControl = document.querySelector(".lead-priority-control");
+// Holds an unsaved priority selection until the user confirms (✓) or cancels (✕).
+let leadPriorityPending = null;
+
+function setLeadPriorityCardClass(leadUniqueId, priorityValue) {
+  const card = document.querySelector(`.lead-card[data-id="${leadUniqueId}"]`);
+  if (!card) return;
+  card.classList.remove("priority-high", "priority-medium", "priority-low");
+  const priorityClass = getLeadPriorityClass(priorityValue);
+  if (priorityClass) card.classList.add(priorityClass);
+}
+
+function clearLeadPriorityPending() {
+  leadPriorityPending = null;
+  leadPriorityConfirmBtn.classList.remove("is-visible");
+  leadPriorityCancelBtn.classList.remove("is-visible");
+  leadPriorityConfirmBtn.disabled = false;
+  leadPriorityCancelBtn.disabled = false;
+  leadPriorityControl.classList.remove("confirm-high", "confirm-medium", "confirm-low");
+}
+
+leadPriorityEl.addEventListener("change", function() {
+  const leadUniqueId = document.getElementById("leadUniqueId").value;
+  if (!leadUniqueId) return;
+
+  const selectedPriority = this.value;
+  const selectedLead = allLeadData.find(lead => lead["lead unique id"] === leadUniqueId);
+  const previousPriority = leadPriorityPending
+    ? leadPriorityPending.previousPriority
+    : (selectedLead ? (selectedLead["lead label"] || "") : "");
+
+  if (selectedPriority === previousPriority) {
+    clearLeadPriorityPending();
+    setLeadPriorityCardClass(leadUniqueId, previousPriority);
+    return;
+  }
+
+  // Temporary preview only — the Google Sheet is NOT updated until ✓ is clicked.
+  leadPriorityPending = { leadUniqueId, previousPriority, selectedPriority };
+  setLeadPriorityCardClass(leadUniqueId, selectedPriority);
+  leadPriorityConfirmBtn.classList.add("is-visible");
+  leadPriorityCancelBtn.classList.add("is-visible");
+  leadPriorityControl.classList.remove("confirm-high", "confirm-medium", "confirm-low");
+});
+
+leadPriorityConfirmBtn.addEventListener("click", function() {
+  if (!leadPriorityPending) return;
+  const { leadUniqueId, previousPriority, selectedPriority } = leadPriorityPending;
+  const selectedLead = allLeadData.find(lead => lead["lead unique id"] === leadUniqueId);
+
+  const base = getLeadPriorityClass(selectedPriority);
+  if (base) leadPriorityControl.classList.add(base.replace("priority-", "confirm-"));
+  leadPriorityConfirmBtn.disabled = true;
+  leadPriorityCancelBtn.disabled = true;
+
+  crmApi.invokeGas("updateLeadPriority", { leadUniqueId, selectedPriority })
+    .then(() => {
+      if (selectedLead) selectedLead["lead label"] = selectedPriority;
+      setLeadPriorityCardClass(leadUniqueId, selectedPriority);
+      clearLeadPriorityPending();
+    })
+    .catch(() => {
+      if (selectedLead) selectedLead["lead label"] = previousPriority;
+      leadPriorityEl.value = previousPriority;
+      setLeadPriorityCardClass(leadUniqueId, previousPriority);
+      clearLeadPriorityPending();
+      alert("Unable to update Lead Priority. Please try again.");
+    });
+});
+
+leadPriorityCancelBtn.addEventListener("click", function() {
+  if (!leadPriorityPending) return;
+  const { leadUniqueId, previousPriority } = leadPriorityPending;
+  leadPriorityEl.value = previousPriority;
+  setLeadPriorityCardClass(leadUniqueId, previousPriority);
+  clearLeadPriorityPending();
+});
 
 
 //All lead Button

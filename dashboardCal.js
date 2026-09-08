@@ -1,5 +1,5 @@
-function getCampaignName(){
-  const sheet = SpreadsheetApp.openById("1fiqGa4nRkSkun-nffI_QVtFQG4o4ubJGXkMIcEprI1k").getSheetByName("Leads Data");
+function getCampaignName() {
+  const sheet = SpreadsheetApp.openById("1awaq6gNQspr-sjp-yuaH-Nu5JJmhyplVRevoaj47JZw").getSheetByName("Leads Data");
 
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
@@ -12,51 +12,51 @@ function getCampaignName(){
   const adSetName = headers.indexOf("AdSetName");
 
   const campaignNames = [...new Set(rows.map((row) => row[campaignNameIndex]).filter((val) => val !== ""))];
-  const adNames = [...new Set(rows.map((row) => row[adNameIndex]).filter((val)=> val !== ""))]
-  const platforms = [...new Set(rows.map((row) => row[campaignSourceIndex]).filter((val)=> val !== ""))]
-  const placements = [...new Set(rows.map((row) => row[placementIndex]).filter((val)=> val !== ""))]
-  const adSetNames = [...new Set(rows.map((row) => row[adSetName]).filter((val)=> val !== ""))]
+  const adNames = [...new Set(rows.map((row) => row[adNameIndex]).filter((val) => val !== ""))]
+  const platforms = [...new Set(rows.map((row) => row[campaignSourceIndex]).filter((val) => val !== ""))]
+  const placements = [...new Set(rows.map((row) => row[placementIndex]).filter((val) => val !== ""))]
+  const adSetNames = [...new Set(rows.map((row) => row[adSetName]).filter((val) => val !== ""))]
 
   return {
     campaignNames: campaignNames,
     adNames: adNames,
     platforms: platforms,
     placements: placements,
-    adSetNames : adSetNames
+    adSetNames: adSetNames
   }
 }
 
-function retriveLeadData2(){
+function retriveLeadData2() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Leads Data");
   const data = sheet.getDataRange().getValues();
   const headings = data[0]
   const leadData = data.splice(1);
   const leadDataBase = []
-  leadData.forEach((lead)=>{
+  leadData.forEach((lead) => {
     let obj = {}
-    headings.forEach((heading,index)=>{
+    headings.forEach((heading, index) => {
       obj[heading.toLowerCase()] = lead[index];
     })
     leadDataBase.push(obj)
   })
   return JSON.stringify(leadDataBase);
-  }
+}
 
-function retriveConsData(){
+function retriveConsData() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Consultation Booked Logs");
   const data = sheet.getDataRange().getValues();
   const headings = data[0]
   const leadData = data.splice(1);
   const leadDataBase = []
-  leadData.forEach((lead)=>{
+  leadData.forEach((lead) => {
     let obj = {}
-    headings.forEach((heading,index)=>{
+    headings.forEach((heading, index) => {
       obj[heading.toLowerCase()] = lead[index];
     })
     leadDataBase.push(obj)
   })
   return JSON.stringify(leadDataBase);
-  }
+}
 
 
 function getLatestWeekEndData() {

@@ -183,6 +183,107 @@ body {
     border-color: #4a69bd;
 }
 
+/* Lead Priority filter - custom dropdown with 3D colour indicators */
+.priority-select {
+    position: relative;
+}
+
+#leadPriorityFilter.priority-select-native {
+    display: none;
+}
+
+.priority-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #212529;
+    background-color: white;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.priority-select-trigger:hover {
+    border-color: #4a69bd;
+}
+
+.priority-select-trigger[aria-expanded="true"] {
+    border-color: #4a69bd;
+    box-shadow: 0 4px 12px rgba(74, 105, 189, 0.25);
+}
+
+.priority-select-caret {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #6c757d;
+    flex-shrink: 0;
+}
+
+.priority-select-options {
+    list-style: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 6px 0;
+    background: white;
+    border: 2px solid #ced4da;
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+    z-index: 20;
+}
+
+.priority-select-option {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 14px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+}
+
+.priority-select-option:hover {
+    background-color: #f1f5fb;
+}
+
+.priority-select-option.is-selected {
+    background-color: #e7effa;
+    font-weight: 600;
+}
+
+.priority-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.65),
+                inset 0 -2px 3px rgba(0, 0, 0, 0.28),
+                0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.priority-dot-high {
+    background: radial-gradient(circle at 32% 28%, #f6a9a9 0%, #e15a5a 55%, #b62f2f 100%);
+}
+
+.priority-dot-medium {
+    background: radial-gradient(circle at 32% 28%, #f8c79a 0%, #ec8a34 55%, #c2620f 100%);
+}
+
+.priority-dot-low {
+    background: radial-gradient(circle at 32% 28%, #f5e6ab 0%, #e6c14d 55%, #c99a1e 100%);
+}
+
 /* Inline Button Group for Filters */
 .button-group-inline {
     display: flex;
@@ -336,41 +437,131 @@ body {
 }
 
 .lead-card {
-    background-color: white;
-    border-bottom: 2px solid #e9ecef;
+    background-color: rgba(255, 255, 255, 0.72);
+    -webkit-backdrop-filter: blur(8px) saturate(120%);
+    backdrop-filter: blur(8px) saturate(120%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-left: 4px solid transparent;
+    border-radius: 12px;
+    margin: 8px 10px;
     padding: 18px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border-left: 4px solid transparent;
     position: relative;
+    box-shadow: inset 0 0 12px rgba(31, 45, 61, 0.05);
 }
 
-.lead-card::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 0;
-    background: linear-gradient(135deg, #4a69bd 0%, #3b5998 100%);
-    transition: width 0.3s ease;
+.lead-card.priority-high {
+    background-image: linear-gradient(to right, rgba(229, 115, 115, 0.18) 0%, rgba(229, 115, 115, 0.05) 35%, rgba(255, 255, 255, 0) 70%);
+    border-color: rgba(229, 115, 115, 0.28);
+    border-left-color: #e57373;
+}
+
+.lead-card.priority-medium {
+    background-image: linear-gradient(to right, rgba(235, 130, 45, 0.20) 0%, rgba(235, 130, 45, 0.06) 35%, rgba(255, 255, 255, 0) 70%);
+    border-color: rgba(235, 130, 45, 0.30);
+    border-left-color: #eb822d;
+}
+
+.lead-card.priority-low {
+    background-image: linear-gradient(to right, rgba(230, 193, 77, 0.18) 0%, rgba(230, 193, 77, 0.05) 35%, rgba(255, 255, 255, 0) 70%);
+    border-color: rgba(230, 193, 77, 0.28);
+    border-left-color: #e6c14d;
+}
+
+/* No Priority - subtle neutral card */
+
+.lead-card:not(.priority-high, .priority-medium, .priority-low) {
+
+    background-color: rgba(234, 245, 253, 0.55);
+
+    border-color: rgba(54, 15, 90, 0.30);
+
+    border-left-color: rgba(96, 165, 235, 0.35);
+
+    box-shadow: inset 0 0 12px rgba(31, 45, 61, 0.06), 0 1px 4px rgba(31, 45, 61, 0.05);
+
+}
+
+/* No Priority - hover (keeps existing move/depth) */
+.lead-card:not(.priority-high, .priority-medium, .priority-low):not(.active):hover {
+    background-color: rgba(208, 228, 249, 0.85);
+    border-color: rgba(96, 165, 235, 0.36);
+    border-left-color: rgba(96, 165, 235, 0.46);
+}
+
+.lead-card.priority-high:hover {
+    background-image: linear-gradient(to right, rgba(229, 115, 115, 0.42) 0%, rgba(229, 115, 115, 0.14) 45%, rgba(255, 255, 255, 0) 80%);
+    border-color: rgba(229, 115, 115, 0.60);
+    border-left-color: #e0554f;
+}
+
+.lead-card.priority-medium:hover {
+    background-image: linear-gradient(to right, rgba(235, 130, 45, 0.46) 0%, rgba(235, 130, 45, 0.16) 45%, rgba(255, 255, 255, 0) 80%);
+    border-color: rgba(235, 130, 45, 0.62);
+    border-left-color: #d16a1c;
+}
+
+.lead-card.priority-low:hover {
+    background-image: linear-gradient(to right, rgba(230, 193, 77, 0.42) 0%, rgba(230, 193, 77, 0.14) 45%, rgba(255, 255, 255, 0) 80%);
+    border-color: rgba(230, 193, 77, 0.60);
+    border-left-color: #d8ab2e;
 }
 
 .lead-card:hover {
-    background-color: #f0f5ff;
-    border-left-color: #4a69bd;
+    background-color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(31, 45, 61, 0.18);
     transform: translateX(4px);
-    box-shadow: 0 4px 15px rgba(74, 105, 189, 0.15);
-}
-
-.lead-card:hover::before {
-    width: 4px;
+    box-shadow: inset 0 0 16px rgba(31, 45, 61, 0.08);
 }
 
 .lead-card.active {
-    background: linear-gradient(135deg, #e3f2fd 0%, #d0e8ff 100%);
+    background: linear-gradient(135deg, rgba(227, 242, 253, 0.9) 0%, rgba(208, 232, 255, 0.9) 100%);
+    border-color: rgba(74, 105, 189, 0.4);
     border-left: 4px solid #4a69bd;
-    box-shadow: 0 6px 20px rgba(74, 105, 189, 0.25);
+    box-shadow: inset 0 0 18px rgba(74, 105, 189, 0.14);
+}
+
+/* Selected card keeps the darker hover shade of its priority */
+.lead-card.priority-high.active {
+    background-color: rgba(255, 255, 255, 0.85);
+    background-image: linear-gradient(to right, rgba(229, 115, 115, 0.42) 0%, rgba(229, 115, 115, 0.14) 45%, rgba(255, 255, 255, 0) 80%);
+    border-color: rgba(229, 115, 115, 0.60);
+    border-left-color: #e0554f;
+    box-shadow: inset 0 0 16px rgba(31, 45, 61, 0.08);
+}
+
+.lead-card.priority-medium.active {
+    background-color: rgba(255, 255, 255, 0.85);
+    background-image: linear-gradient(to right, rgba(235, 130, 45, 0.46) 0%, rgba(235, 130, 45, 0.16) 45%, rgba(255, 255, 255, 0) 80%);
+    border-color: rgba(235, 130, 45, 0.62);
+    border-left-color: #d16a1c;
+    box-shadow: inset 0 0 16px rgba(31, 45, 61, 0.08);
+}
+
+.lead-card.priority-low.active {
+    background-color: rgba(255, 255, 255, 0.85);
+    background-image: linear-gradient(to right, rgba(230, 193, 77, 0.42) 0%, rgba(230, 193, 77, 0.14) 45%, rgba(255, 255, 255, 0) 80%);
+    border-color: rgba(230, 193, 77, 0.60);
+    border-left-color: #d8ab2e;
+    box-shadow: inset 0 0 16px rgba(31, 45, 61, 0.08);
+}
+
+/* No Priority selected card (matches its hover shade) */
+.lead-card:not(.priority-high, .priority-medium, .priority-low).active {
+    background: rgba(208, 228, 249, 0.85);
+    border-color: rgba(96, 165, 235, 0.36);
+    border-left-color: rgba(96, 165, 235, 0.46);
+    box-shadow: inset 0 0 16px rgba(31, 45, 61, 0.08);
+}
+
+/* No Priority - darker text for readability on the light blue tint */
+.lead-card:not(.priority-high, .priority-medium, .priority-low) h3 {
+    color: #14202c;
+}
+
+.lead-card:not(.priority-high, .priority-medium, .priority-low) .lead-info {
+    color: #37424c;
 }
 
 .lead-card h3 {
@@ -1619,6 +1810,129 @@ input[type="number"]::-webkit-outer-spin-button {
     flex: 0 0 auto;
 }
 
+.lead-priority-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    padding: 4px 6px 4px 10px;
+    border: 1px solid #e2e6ea;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    font-weight: 600;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.lead-priority-control label {
+    color: #6c757d;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.lead-priority-control select {
+    padding: 5px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    background-color: white;
+    color: #2c3e50;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.lead-priority-control select:focus {
+    outline: none;
+    border-color: #4a69bd;
+}
+
+/* Soft tint reflecting the currently selected priority */
+.lead-priority-control:has(#leadPriority option[value="High"]:checked) {
+    background-color: rgba(229, 115, 115, 0.08);
+    border-color: rgba(229, 115, 115, 0.45);
+}
+
+.lead-priority-control:has(#leadPriority option[value="High"]:checked) select {
+    border-color: rgba(229, 115, 115, 0.55);
+}
+
+.lead-priority-control:has(#leadPriority option[value="Medium"]:checked) {
+    background-color: rgba(230, 193, 77, 0.10);
+    border-color: rgba(230, 193, 77, 0.48);
+}
+
+.lead-priority-control:has(#leadPriority option[value="Medium"]:checked) select {
+    border-color: rgba(230, 193, 77, 0.58);
+}
+
+.lead-priority-control:has(#leadPriority option[value="Low"]:checked) {
+    background-color: rgba(100, 164, 224, 0.08);
+    border-color: rgba(100, 164, 224, 0.45);
+}
+
+.lead-priority-control:has(#leadPriority option[value="Low"]:checked) select {
+    border-color: rgba(100, 164, 224, 0.55);
+}
+
+.lead-priority-btn {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid #ced4da;
+    background-color: white;
+    color: #6c757d;
+    font-size: 13px;
+    line-height: 1;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.lead-priority-btn.is-visible {
+    display: inline-flex;
+}
+
+.lead-priority-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.lead-priority-btn.confirm:hover {
+    border-color: #2e7d32;
+    color: #2e7d32;
+    background-color: #f1f8f2;
+}
+
+.lead-priority-btn.cancel:hover {
+    border-color: #c62828;
+    color: #c62828;
+    background-color: #fdf1f1;
+}
+
+.lead-priority-control.confirm-high .lead-priority-btn.confirm {
+    box-shadow: 0 0 0 2px rgba(229, 115, 115, 0.22);
+    border-color: #e57373;
+    color: #e57373;
+}
+
+.lead-priority-control.confirm-medium .lead-priority-btn.confirm {
+    box-shadow: 0 0 0 2px rgba(230, 193, 77, 0.24);
+    border-color: #e6c14d;
+    color: #b9930f;
+}
+
+.lead-priority-control.confirm-low .lead-priority-btn.confirm {
+    box-shadow: 0 0 0 2px rgba(100, 164, 224, 0.22);
+    border-color: #64a4e0;
+    color: #64a4e0;
+}
+
 .form-title::after {
     content: '';
     position: absolute;
@@ -1744,4 +2058,3 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
     </style>
-

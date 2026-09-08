@@ -1021,9 +1021,10 @@
         });
     </script>
     <script>
-  window.CRM_USE_API_PROXY = "<?= CRM_USE_API_PROXY ?>";
-</script>
-<?!= HtmlService.createHtmlOutputFromFile("apiClient").getContent() ?>
+      window.CRM_USE_API_PROXY = "<?= CRM_USE_API_PROXY ?>";
+      window.CRM_WEB_APP_BASE = "<?= CRM_WEB_APP_BASE ?>";
+    </script>
+    <?!= HtmlService.createHtmlOutputFromFile("apiClient").getContent() ?>
     <?!= HtmlService.createHtmlOutputFromFile("jsDashboard").getContent() ?>
     <?!= HtmlService.createHtmlOutputFromFile("dashboardFilters").getContent() ?>
 </body>

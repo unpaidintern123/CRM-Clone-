@@ -111,6 +111,8 @@ if (isLegacyPayload) {
   } else {
     allLeadData.unshift(updatedLeadLegacy);
   }
+} else if (typeof serverRes === "object" && serverRes !== null) {
+  allLeadData = serverRes;
 }
 console.log("Data added sucessfully!!")
 // console.log(allLeadData);

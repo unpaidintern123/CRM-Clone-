@@ -89,6 +89,7 @@ function crmApiProxy(path, method, payloadJson) {
 }
 
 
+
 function retriveLeadData(){
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Leads Data");
   const data = sheet.getDataRange().getValues();
@@ -104,6 +105,34 @@ function retriveLeadData(){
   })
   return JSON.stringify(leadDataBase);
   }
+
+function updateLeadPriority(leadUniqueIdOrObj, leadPriority) {
+  let targetId = leadUniqueIdOrObj;
+  let targetPriority = leadPriority;
+  if (typeof leadUniqueIdOrObj === "object" && leadUniqueIdOrObj !== null) {
+    targetId = leadUniqueIdOrObj.leadUniqueId;
+    targetPriority = leadUniqueIdOrObj.selectedPriority || leadUniqueIdOrObj.leadPriority || leadUniqueIdOrObj["lead label"];
+  }
+
+  const sheet = SpreadsheetApp.openById("1awaq6gNQspr-sjp-yuaH-Nu5JJmhyplVRevoaj47JZw").getSheetByName("Leads Data");
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(header => header.toString().trim().toLowerCase());
+  const leadIdColumn = headers.indexOf("lead unique id");
+  const leadLabelColumn = headers.indexOf("lead label");
+
+  if (leadIdColumn === -1 || leadLabelColumn === -1) {
+    throw new Error('Required "Lead Unique ID" or "Lead Label" column not found.');
+  }
+
+  for (let rowIndex = 1; rowIndex < data.length; rowIndex++) {
+    if (data[rowIndex][leadIdColumn] === targetId) {
+      sheet.getRange(rowIndex + 1, leadLabelColumn + 1).setValue(targetPriority);
+      return true;
+    }
+  }
+
+  throw new Error("Lead not found.");
+}
 
 function safeFormatDate(value, pattern) {
   try {
@@ -175,6 +204,11 @@ function updateLeadDetails(lead) {
       sheet.getRange(rowNo,33).setValue(lead["totalSalesAmount"]); // total Sales Amount
       sheet.getRange(rowNo,37).setValue(lead["notBookedFeedback"]); // Not Booked Feedback
       sheet.getRange(rowNo,38).setValue(safeFormatDate(lead.orderDate, "dd/MM/yyyy")); // Not Booked Feedback
+
+      const firstContactValue = sheet.getRange(rowNo,42).getValue()
+      Logger.log(firstContactValue)
+      
+      if(!firstContactValue){sheet.getRange(rowNo,42).setValue(Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss"))}
 
 
     if((lead.followUpDate !== "" || folDateLost !== "") && (Utilities.formatDate(leadData[i][12] === "" ? new Date() : leadData[i][12],Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss") !== safeFormatDate(lead.followUpDate, "dd/MM/yyyy HH:mm:ss"))){
@@ -266,9 +300,56 @@ function consultationLog(lead){
   sheet.appendRow(consData);
 }
 
+function syncAssignmentUsersToFirestoreConfig() {
+  const sheet = SpreadsheetApp.openById("1awaq6gNQspr-sjp-yuaH-Nu5JJmhyplVRevoaj47JZw").getSheetByName("Users");
+  if (!sheet) throw new Error("Users sheet not found.");
+
+  const userData = sheet.getDataRange().getValues();
+  const activeAssignees = [];
+  const mondayEligibleAssignees = [];
+
+  for (let i = 1; i < userData.length; i++) {
+    const row = userData[i];
+    const username = String(row[0] || "").trim();
+    const status = String(row[3] || "").trim();
+    const nextMonday = String(row[4] || "").trim();
+
+    if (username && status === "Active") {
+      activeAssignees.push(username);
+      if (nextMonday === "Coming") {
+        mondayEligibleAssignees.push(username);
+      }
+    }
+  }
+
+  const payload = {
+    activeAssignees: activeAssignees,
+    mondayEligibleAssignees: mondayEligibleAssignees
+  };
+
+  return crmApiProxy("/admin/sync-assignees", "POST", JSON.stringify(payload));
+}
+
+/**
+ * Automatically triggers in real-time whenever someone edits the "Users" sheet.
+ * Instantly syncs active/inactive users to Firestore without needing time triggers!
+ */
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    const sheetName = e.range.getSheet().getName();
+    if (sheetName === "Users") {
+      Logger.log("User sheet edited -> automatically syncing assignees to Firestore...");
+      syncAssignmentUsersToFirestoreConfig();
+    }
+  } catch (err) {
+    Logger.log("onEdit sync error: " + err);
+  }
+}
+
 
 function checkLogin(loginDetail){
-  const sheet = getCrmSpreadsheetForSync().getSheetByName("Users");
+  const sheet = SpreadsheetApp.openById("1awaq6gNQspr-sjp-yuaH-Nu5JJmhyplVRevoaj47JZw").getSheetByName("Users");
   const data = sheet.getDataRange().getValues();
   const headings = data[0];
   const loginData = data.splice(1);
@@ -276,7 +357,7 @@ function checkLogin(loginDetail){
   for(let i=0; i < loginData.length; i++){
     if(loginData[i][0] === loginDetail.username && loginData[i][1] === loginDetail.password){
       const status = String(loginData[i][3] || "").trim();
-      if (status !== "Active") {
+      if (status && status !== "Active") {
         return JSON.stringify({
           message: "Your account is inactive. Please contact admin."
         });
@@ -344,7 +425,13 @@ function newLeadUpload(lead){
     "",
     "",
     "",
-    lead["consultationStatus"]
+    lead["consultationStatus"],
+    "",
+    "",
+    "",
+    "",
+    "",
+    Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss")
   ]
   sheet.appendRow(dataToBeAdded);
 
@@ -395,139 +482,37 @@ function getNextLeadId() {
 }
 
 
-function getCrmSpreadsheetForSync() {
-  const props = PropertiesService.getScriptProperties();
-  const explicitId = props.getProperty("CRM_SYNC_SHEET_ID") || "1awaq6gNQspr-sjp-yuaH-Nu5JJmhyplVRevoaj47JZw";
-  if (explicitId) {
-    return SpreadsheetApp.openById(explicitId);
-  }
-  return SpreadsheetApp.getActiveSpreadsheet();
-}
-
-/**
- * Lead flow (column F) may be a numeric quota/weight band (10–100), or legacy text flags (Yes/No).
- * For safety we treat: number > 0 OR Yes/TRUE/Active/Enabled → eligible for assignment pool.
- * 0 / blank / No → not eligible (weighted distribution is not implemented; numbers are eligibility + future weight hints).
- */
-function isLeadFlowEnabled(value) {
-  if (value === null || value === undefined || value === "") return false;
-  if (value === false) return false;
-  if (typeof value === "boolean") return value === true;
-  if (typeof value === "number") {
-    if (isNaN(value)) return false;
-    return value > 0;
-  }
-  const normalized = String(value).trim().toLowerCase();
-  if (!normalized) return false;
-  if (["yes", "true", "active", "enabled", "on", "y"].includes(normalized)) return true;
-  if (["no", "false", "disabled", "off", "n"].includes(normalized)) return false;
-  const numeric = Number(normalized.replace(/,/g, ""));
-  if (!isNaN(numeric)) {
-    return numeric > 0;
-  }
-  return false;
-}
-
-function getAssignmentEligibleUsers() {
-  const spreadsheet = getCrmSpreadsheetForSync();
-  const userSheet = spreadsheet.getSheetByName("Users");
-  if (!userSheet) throw new Error("Users sheet not found.");
-
-  const userData = userSheet.getDataRange().getValues();
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const isMonday = dayOfWeek === 1;
-  const users = [];
-
-  for (let i = 1; i < userData.length; i++) {
-    const row = userData[i];
-    const username = String(row[0] || "").trim();
-    const permission = String(row[2] || "").trim();
-    const status = String(row[3] || "").trim();
-    const nextMonday = String(row[4] || "").trim();
-    const leadFlowRaw = row[5];
-    const email = String(row[6] || "").trim();
-
-    const leadFlow =
-      typeof leadFlowRaw === "number" || typeof leadFlowRaw === "boolean"
-        ? leadFlowRaw
-        : String(leadFlowRaw || "").trim();
-
-    const reasons = [];
-    if (!username) {
-      reasons.push("missing_username");
-    } else {
-      if (status !== "Active") reasons.push("status_not_active");
-      if (status === "Active" && !isLeadFlowEnabled(leadFlowRaw)) reasons.push("lead_flow_disabled_or_zero");
-      if (
-        status === "Active" &&
-        isLeadFlowEnabled(leadFlowRaw) &&
-        isMonday &&
-        nextMonday !== "Coming"
-      ) {
-        reasons.push("not_coming_monday");
-      }
-    }
-
-    const eligibleGeneral =
-      username !== "" && status === "Active" && isLeadFlowEnabled(leadFlowRaw);
-    /** Eligible when assignLeads() runs today: all general-eligible weekdays; Mondays also require Coming. */
-    const eligibleToday = eligibleGeneral && (!isMonday || nextMonday === "Coming");
-    /** Users who qualify for Monday round-robin (Active + lead flow + Coming), stored for audit/sync. */
-    const eligibleMondayPool =
-      eligibleGeneral && nextMonday === "Coming";
-
-    users.push({
-      username,
-      permission,
-      status,
-      nextMonday,
-      leadFlow,
-      email,
-      eligibleToday,
-      eligibleGeneral,
-      eligibleMondayPool,
-      reason: reasons.length ? reasons.join(",") : "",
-    });
-  }
-
-  return {
-    generatedAt: new Date().toISOString(),
-    dayOfWeek,
-    users,
-  };
-}
-
 function assignLeads() {
-  const spreadsheet = getCrmSpreadsheetForSync();
-  const leadSheet = spreadsheet.getSheetByName("Leads Data");
-  if (!leadSheet) {
-    throw new Error("Leads Data sheet not found.");
-  }
+  const leadSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Leads Data");
+  const userSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Users");
+  if (!leadSheet || !userSheet) throw new Error("One or both sheets not found.");
 
-  const eligibility = getAssignmentEligibleUsers();
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
   const leadData = leadSheet.getDataRange().getValues();
   const assignCol = 10; // Column K
-  const activeUsers = eligibility.users
-    .filter((user) => user.eligibleToday)
-    .map((user) => user.username);
+  const userData = userSheet.getDataRange().getValues();
 
-  if (activeUsers.length === 0) {
-    Logger.log("assignLeads: No eligible users found for assignment.");
-    return {
-      success: false,
-      assignedRows: 0,
-      activeUsers: 0,
-      message: "No eligible users found for assignment.",
-    };
-  }
+  // Filter users based on day logic
+  const activeUsers = userData.filter(row => {
+    const isActive = row[3] === "Active";
+    const isComing = row[4] === "Coming"; // Column E
+    if (dayOfWeek === 1) { // Monday
+      return row[0] && isActive && isComing;
+    } else {
+      return row[0] && isActive;
+    }
+  }).map(row => row[0]);
+
+  if (activeUsers.length === 0) throw new Error("No eligible users found for assignment.");
 
   const props = PropertiesService.getScriptProperties();
   const lastAssigned = props.getProperty("lastAssignedUser") || "";
   let nextIndex = activeUsers.indexOf(lastAssigned) + 1;
   if (nextIndex >= activeUsers.length || nextIndex === 0) nextIndex = 0;
 
-  let assignedRows = 0;
+  let updated = false;
 
   for (let i = 1; i < leadData.length; i++) {
     const row = leadData[i];
@@ -538,239 +523,13 @@ function assignLeads() {
       leadSheet.getRange(i + 1, assignCol + 1).setValue(activeUsers[nextIndex]);
       props.setProperty("lastAssignedUser", activeUsers[nextIndex]);
       nextIndex = (nextIndex + 1) % activeUsers.length;
-      assignedRows += 1;
+      updated = true;
     }
   }
 
-  if (!assignedRows) {
-    Logger.log("assignLeads: No unassigned leads were found or all rows are empty.");
-  } else {
-    Logger.log(`assignLeads: Assigned ${assignedRows} lead(s) using ${activeUsers.length} eligible users.`);
-  }
-
-  return {
-    success: true,
-    assignedRows,
-    activeUsers: activeUsers.length,
-    dayOfWeek: eligibility.dayOfWeek,
-  };
+  if (!updated) Logger.log("No unassigned leads were found or all rows are empty.");
 }
 
-function runLeadAssignmentForSync() {
-  try {
-    const result = assignLeads();
-    return {
-      success: true,
-      ...result,
-    };
-  } catch (err) {
-    Logger.log(`runLeadAssignmentForSync failed: ${err && err.message ? err.message : err}`);
-    return {
-      success: false,
-      assignedRows: 0,
-      error: String(err && err.message ? err.message : err),
-    };
-  }
-}
-
-function syncAssignmentUsersToFirestoreConfig() {
-  const props = PropertiesService.getScriptProperties();
-  const baseUrl = String(props.getProperty("CRM_API_BASE_URL") || "").trim();
-  const token = String(props.getProperty("CRM_API_TOKEN") || "").trim();
-  if (!baseUrl || !token) {
-    throw new Error("CRM_API_BASE_URL and CRM_API_TOKEN must be configured in Script Properties.");
-  }
-
-  const eligibility = getAssignmentEligibleUsers();
-  const activeAssignees = eligibility.users
-    .filter((user) => user.eligibleGeneral)
-    .map((user) => user.username);
-  /** Matches Monday pool + audit: Active + lead flow + next monday = Coming (independent of today's weekday). */
-  const mondayEligibleAssignees = eligibility.users
-    .filter((user) => user.eligibleMondayPool)
-    .map((user) => user.username);
-
-  const payload = {
-    activeAssignees,
-    mondayEligibleAssignees,
-    source: "google_sheet_users",
-    syncedBy: "apps_script",
-    usersSnapshot: eligibility.users,
-  };
-
-  const endpoint = `${baseUrl.replace(/\/$/, "")}/admin/sync-assignees`;
-  const response = UrlFetchApp.fetch(endpoint, {
-    method: "post",
-    contentType: "application/json",
-    headers: {
-      "x-api-token": token,
-    },
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true,
-  });
-
-  const status = response.getResponseCode();
-  const raw = response.getContentText();
-  let parsed = {};
-  try {
-    parsed = JSON.parse(raw || "{}");
-  } catch (err) {
-    parsed = { success: false, raw };
-  }
-
-  if (status < 200 || status >= 300 || parsed.success === false) {
-    throw new Error(`syncAssignmentUsersToFirestoreConfig failed (${status}): ${raw}`);
-  }
-
-  return {
-    success: true,
-    endpoint,
-    status,
-    activeAssigneesCount: activeAssignees.length,
-    mondayEligibleAssigneesCount: mondayEligibleAssignees.length,
-    usersScanned: eligibility.users.length,
-    backend: parsed.data || parsed,
-  };
-}
-
-function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu("CRM Admin")
-    .addItem("Sync Assignment Users to Firestore", "menuSyncAssignmentUsersToFirestore")
-    .addItem("Show Eligible Assignment Users", "menuShowEligibleAssignmentUsers")
-    .addItem("Run Lead Assignment", "menuRunLeadAssignment")
-    .addSeparator()
-    .addItem("Install hourly assignment sync trigger", "installAssignmentSyncHourlyTrigger")
-    .addItem("Install 15-minute assignment sync trigger", "installAssignmentSync15MinTrigger")
-    .addItem("Remove assignment sync triggers", "removeAssignmentSyncTriggers")
-    .addToUi();
-}
-
-function menuSyncAssignmentUsersToFirestore() {
-  try {
-    const result = syncAssignmentUsersToFirestoreConfig();
-    const summary = [
-      "Sync completed successfully.",
-      "Active assignees (Firestore fallback): " + result.activeAssigneesCount,
-      "Monday pool (next monday = Coming): " + result.mondayEligibleAssigneesCount,
-      "Users rows scanned: " + result.usersScanned,
-    ].join("\n");
-    Logger.log("menuSyncAssignmentUsersToFirestore: " + JSON.stringify(result));
-    SpreadsheetApp.getUi().alert(summary);
-  } catch (err) {
-    const msg = String(err && err.message ? err.message : err);
-    Logger.log("menuSyncAssignmentUsersToFirestore ERROR: " + msg);
-    SpreadsheetApp.getUi().alert("Sync failed:\n" + msg);
-  }
-}
-
-function menuShowEligibleAssignmentUsers() {
-  try {
-    const eligibility = getAssignmentEligibleUsers();
-    const general = eligibility.users.filter((u) => u.eligibleGeneral).map((u) => u.username);
-    const today = eligibility.users.filter((u) => u.eligibleToday).map((u) => u.username);
-    const mondayPool = eligibility.users.filter((u) => u.eligibleMondayPool).map((u) => u.username);
-    const lines = [
-      "Day of week (0=Sun): " + eligibility.dayOfWeek,
-      "Eligible for Firestore activeAssignees (" + general.length + "): " + general.join(", "),
-      "Eligible for assignLeads today (" + today.length + "): " + today.join(", "),
-      "Monday pool / mondayEligibleAssignees (" + mondayPool.length + "): " + mondayPool.join(", "),
-    ];
-    Logger.log("menuShowEligibleAssignmentUsers: " + lines.join(" | "));
-    SpreadsheetApp.getUi().alert(lines.join("\n\n"));
-  } catch (err) {
-    const msg = String(err && err.message ? err.message : err);
-    Logger.log("menuShowEligibleAssignmentUsers ERROR: " + msg);
-    SpreadsheetApp.getUi().alert("Could not read Users:\n" + msg);
-  }
-}
-
-function menuRunLeadAssignment() {
-  try {
-    const result = assignLeads();
-    const summary = result.success
-      ? [
-          "Lead assignment finished.",
-          "Rows assigned: " + result.assignedRows,
-          "Eligible users today: " + result.activeUsers,
-          "Day of week: " + result.dayOfWeek,
-        ].join("\n")
-      : String(result.message || "No assignment performed.");
-    Logger.log("menuRunLeadAssignment: " + JSON.stringify(result));
-    SpreadsheetApp.getUi().alert(summary);
-  } catch (err) {
-    const msg = String(err && err.message ? err.message : err);
-    Logger.log("menuRunLeadAssignment ERROR: " + msg);
-    SpreadsheetApp.getUi().alert("Assignment failed:\n" + msg);
-  }
-}
-
-/**
- * Called by time-driven triggers; logs compact success line plus full error on failure.
- */
-function timedSyncAssignmentUsersToFirestore() {
-  try {
-    const result = syncAssignmentUsersToFirestoreConfig();
-    Logger.log(
-      "timedSyncAssignmentUsersToFirestore OK activeAssignees=" +
-        result.activeAssigneesCount +
-        " mondayPool=" +
-        result.mondayEligibleAssigneesCount
-    );
-  } catch (err) {
-    Logger.log(
-      "timedSyncAssignmentUsersToFirestore ERROR: " + String(err && err.message ? err.message : err)
-    );
-  }
-}
-
-function removeAssignmentSyncTriggersInternal() {
-  const fn = "timedSyncAssignmentUsersToFirestore";
-  let removed = 0;
-  ScriptApp.getProjectTriggers().forEach((t) => {
-    if (t.getHandlerFunction() === fn) {
-      ScriptApp.deleteTrigger(t);
-      removed += 1;
-    }
-  });
-  Logger.log("removeAssignmentSyncTriggers: removed count=" + removed);
-  return removed;
-}
-
-function removeAssignmentSyncTriggers() {
-  const removed = removeAssignmentSyncTriggersInternal();
-  SpreadsheetApp.getUi().alert("Removed " + removed + " assignment sync trigger(s).");
-}
-
-function installAssignmentSyncHourlyTrigger() {
-  try {
-    removeAssignmentSyncTriggersInternal();
-    ScriptApp.newTrigger("timedSyncAssignmentUsersToFirestore").timeBased().everyHours(1).create();
-    SpreadsheetApp.getUi().alert(
-      "Installed: hourly sync trigger → timedSyncAssignmentUsersToFirestore()\n(Extensions → Apps Script → Triggers)"
-    );
-    Logger.log("installAssignmentSyncHourlyTrigger: created hourly trigger");
-  } catch (err) {
-    const msg = String(err && err.message ? err.message : err);
-    Logger.log("installAssignmentSyncHourlyTrigger ERROR: " + msg);
-    SpreadsheetApp.getUi().alert("Could not install trigger:\n" + msg);
-  }
-}
-
-function installAssignmentSync15MinTrigger() {
-  try {
-    removeAssignmentSyncTriggersInternal();
-    ScriptApp.newTrigger("timedSyncAssignmentUsersToFirestore").timeBased().everyMinutes(15).create();
-    SpreadsheetApp.getUi().alert(
-      "Installed: 15-minute sync trigger → timedSyncAssignmentUsersToFirestore()\n(Extensions → Apps Script → Triggers)"
-    );
-    Logger.log("installAssignmentSync15MinTrigger: created 15-min trigger");
-  } catch (err) {
-    const msg = String(err && err.message ? err.message : err);
-    Logger.log("installAssignmentSync15MinTrigger ERROR: " + msg);
-    SpreadsheetApp.getUi().alert("Could not install trigger:\n" + msg);
-  }
-}
 
 function updateActualTimes() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("FMS");
@@ -783,7 +542,7 @@ function updateActualTimes() {
     const orderStatus = data[i][21];
 
 
-    // Check for "Consultation Booked", "Lost", or "Dead" in Column I
+    // Check for "Consultation Booked", "Lost", or "Dead" in Column K
     if (["Consultation Booked", "Lost", "Dead","Consultation Visited","Not Visited Lost"].includes(status) && data[i][9] === "") {
       sheet.getRange(i + 1, 10).setValue(currentTime); // Column J
     }
@@ -1121,6 +880,33 @@ function addNewLeadDataFormSheets(){
     }
   })
 
+  // Reel To DM System
+  const reelToDMSheet = SpreadsheetApp.openById("1AQF_9FrywXnBLnyOd0wt-__80H6qSvsakg23P3aYXew").getSheetByName("Leads");
+  const reelToDMLeadData = reelToDMSheet.getDataRange().getValues().splice(1);
+  
+  reelToDMLeadData.forEach((lead,index)=>{
+    let rowNumber = index + 2;
+    if(lead[13] !== "Sent" && lead[3] !== ""){
+      
+      leadData["client name"] = lead[1]
+      leadData["contact number"] = lead[12]
+      leadData["city"] = ''
+      leadData["platform"] = `Instagram (Reels)`
+      leadData["CampaignName"] = "Instagram Reels Campaign Name"
+      leadData["AdSetName"] = "Instagram Reels Adset Name"
+      leadData["AdName"] = "Instagram Reels Ad name"
+      leadData["CampaignSource"] = "Instagram Reels Campaign Source"
+      leadData["Placement"] = "Instagram Reels Placement"
+      leadData["Consultation Mode"] = ""
+      leadData["secondary contact number"] = ""
+      leadData["preffered time to connect"] = ""
+
+    addToCRMApp(leadData);
+    reelToDMSheet.getRange(rowNumber,14).setValue("Sent");
+
+    }
+  })
+
   assignLeads();
 
 }
@@ -1310,7 +1096,235 @@ function addOnlineBookingPaymentDone() {
 
 }
 
+function sendConsultationWhatsAppReminders() {
+  const SHEET_NAME = "Leads Data";
 
-function testWhatsappGallabox(){
-  whatsappGallabox.processContactAndSendMessage("KUNAL DEMO", 9372356905,"customerservice1@americanhairline.com");
+  const COL_CLIENT_NAME = 3;    // Column C
+  const COL_MOBILE = 4;         // Column D
+  const COL_STATUS = 9;         // Column I
+  const COL_CONSULTATION = 15;  // Column O
+
+  const REQUIRED_STATUS = "Consultation Booked";
+
+  // Replace these with your exact approved Gallabox template names
+  const TEMPLATE_ONE_DAY_BEFORE = "consultation_booked_reminder_1day_before";
+  const TEMPLATE_SAME_DAY = "consultation_booked_reminder_same_day";
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+
+  if (!sheet) {
+    throw new Error(`Sheet not found: ${SHEET_NAME}`);
+  }
+
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow < 2) {
+    Logger.log("No Consultation Reminder Sent");
+    return;
+  }
+
+  const lastCol = Math.max(
+    COL_CLIENT_NAME,
+    COL_MOBILE,
+    COL_STATUS,
+    COL_CONSULTATION
+  );
+
+  const range = sheet.getRange(2, 1, lastRow - 1, lastCol);
+  const values = range.getValues();
+  const displayValues = range.getDisplayValues();
+
+  const today = startOfDay_(new Date());
+  const tomorrow = addDays_(today, 1);
+
+  let sentCount = 0;
+
+  values.forEach((row, index) => {
+    const rowNumber = index + 2;
+
+    const clientName = String(displayValues[index][COL_CLIENT_NAME - 1]).trim() || "Sir/Ma’am";
+    const mobileNo = String(displayValues[index][COL_MOBILE - 1]).trim();
+    const leadStatus = String(displayValues[index][COL_STATUS - 1]).trim();
+
+    const rawConsultationValue = row[COL_CONSULTATION - 1];
+    const displayConsultationValue = displayValues[index][COL_CONSULTATION - 1];
+
+    if (leadStatus !== REQUIRED_STATUS) {
+      return;
+    }
+
+    if (!mobileNo) {
+      Logger.log(`Row ${rowNumber}: Mobile number is missing`);
+      return;
+    }
+
+    const consultationDate = parseConsultationDate_(
+      rawConsultationValue,
+      displayConsultationValue
+    );
+
+    if (!consultationDate) {
+      Logger.log(`Row ${rowNumber}: Invalid consultation date`);
+      return;
+    }
+
+    const consultationDay = startOfDay_(consultationDate);
+
+    // Date and time stored in a separate variable
+    const dateAndTime = formatConsultationDateTime_(consultationDate);
+
+    let templateName = "";
+
+    if (isSameDate_(consultationDay, tomorrow)) {
+      templateName = TEMPLATE_ONE_DAY_BEFORE;
+    } else if (isSameDate_(consultationDay, today)) {
+      templateName = TEMPLATE_SAME_DAY;
+    } else {
+      return;
+    }
+
+    try {
+      whatsappGallabox.sendConsultationBookedReminder(
+        clientName,
+        mobileNo,
+        templateName,
+        dateAndTime
+      );
+
+      sentCount++;
+
+      Logger.log(`Reminder sent to ${clientName} - ${mobileNo} for row ${rowNumber}`);
+    } catch (error) {
+      Logger.log(`Failed to send reminder for row ${rowNumber}: ${error.message}`);
+    }
+  });
+
+  if (sentCount === 0) {
+    Logger.log("No Consultation Reminder Sent");
+  } else {
+    Logger.log(`Total Consultation Reminders Sent: ${sentCount}`);
+  }
+}
+
+
+/**
+ * Parses consultation date from either:
+ * 1. Actual Google Sheets Date object
+ * 2. Text format: dd/MM/yyyy HH:mm:ss
+ */
+function parseConsultationDate_(rawValue, displayValue) {
+  if (rawValue instanceof Date && !isNaN(rawValue.getTime())) {
+    return rawValue;
+  }
+
+  const dateText = String(displayValue).trim();
+
+  if (!dateText) {
+    return null;
+  }
+
+  // Expected format: dd/MM/yyyy HH:mm:ss
+  const match = dateText.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})$/
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const day = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const year = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6]);
+
+  const parsedDate = new Date(year, month, day, hour, minute, second);
+
+  if (isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return parsedDate;
+}
+
+
+/**
+ * Formats date like:
+ * 23rd April at 2.00pm
+ */
+function formatConsultationDateTime_(dateObj) {
+  const day = dateObj.getDate();
+
+  const monthName = Utilities.formatDate(
+    dateObj,
+    Session.getScriptTimeZone(),
+    "MMMM"
+  );
+
+  let hours = dateObj.getHours();
+  const minutes = dateObj.getMinutes();
+
+  const ampm = hours >= 12 ? "pm" : "am";
+
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+
+  const formattedMinutes = String(minutes).padStart(2, "0");
+
+  return `${day}${getOrdinalSuffix_(day)} ${monthName} at ${hours}.${formattedMinutes}${ampm}`;
+}
+
+
+/**
+ * Returns ordinal suffix for dates:
+ * 1st, 2nd, 3rd, 4th, etc.
+ */
+function getOrdinalSuffix_(day) {
+  if (day >= 11 && day <= 13) {
+    return "th";
+  }
+
+  switch (day % 10) {
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    default:
+      return "th";
+  }
+}
+
+
+/**
+ * Converts date to start of day.
+ */
+function startOfDay_(dateObj) {
+  return new Date(
+    dateObj.getFullYear(),
+    dateObj.getMonth(),
+    dateObj.getDate()
+  );
+}
+
+
+/**
+ * Adds days to a date.
+ */
+function addDays_(dateObj, days) {
+  const newDate = new Date(dateObj);
+  newDate.setDate(newDate.getDate() + days);
+  return startOfDay_(newDate);
+}
+
+
+/**
+ * Compares two dates without checking time.
+ */
+function isSameDate_(date1, date2) {
+  return date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate();
 }

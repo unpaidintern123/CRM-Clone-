@@ -1360,6 +1360,7 @@
             }
         });
 
+        // Sign Out Functionality
         logoutBtn.addEventListener("click", () => {
             logoutBtn.disabled = true;
             logoutBtn.innerHTML = '<span class="logout-icon">⏳</span>Signing Out...';
@@ -1374,7 +1375,7 @@
 
         // Navigation Functions
         function goToAllLeads() {
-           crmApi.navigateToPage("Home");
+            crmApi.navigateToPage("Home");
         }
 
         // Form Submission Handler
@@ -1398,9 +1399,6 @@
             console.log('Lead data to submit:', leadData);
 
             crmApi.invokeGas("newLeadUpload", leadData).then(onSuccess).catch((err) => { console.error(err); alert("Failed to upload lead"); });
-
-            
-
         });
 
         function onSuccess(message){
@@ -1444,6 +1442,14 @@
             initializeForm();
             loadUserInfo();
         });
+
+        // Demo: Create a sample user in localStorage for testing
+        if (!localStorage.getItem("loggedInUser")) {
+            localStorage.setItem("loggedInUser", JSON.stringify({
+                username: "Demo User",
+                permission: "Admin"
+            }));
+        }
 
         const dashboard = document.querySelector(".dashboard");
         dashboard.addEventListener("click",()=>{

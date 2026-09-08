@@ -1956,10 +1956,20 @@ function onConsultationsFetched(data) {
 }
 
 function onMisFetched(data) {
-  const misData = JSON.parse(data);
-  misDataPerson = misData.map(r => ({ name: r[0].toString().toLowerCase(), score: r[3] }));
-  console.log(misDataPerson);
-  updateHeaderProfile(loggedUser.username);
+  try {
+    const misData = typeof data === "string" ? JSON.parse(data || "[]") : (data || []);
+    misDataPerson = Array.isArray(misData)
+      ? misData.map(r => ({ name: String(r[0] || "").toLowerCase(), score: r[3] }))
+      : [];
+    console.log(misDataPerson);
+    if (typeof updateHeaderProfile === "function" && typeof loggedUser !== "undefined" && loggedUser) {
+      updateHeaderProfile(loggedUser.username);
+    }
+  } catch (err) {
+    console.error("onMisFetched error", err);
+  } finally {
+    hideSpinner();
+  }
 }
 
 /* ========== Date Helpers ========== */
@@ -2431,7 +2441,8 @@ function updateHeaderProfile(person) {
 /* ========== Error Handling ========== */
 window.addEventListener('error', e => {
   console.error('Dashboard Error:', e.message);
-  hideSpinner();
+  const spinner = document.getElementById('spinnerOverlay');
+  if (spinner) { spinner.style.opacity = '0'; spinner.style.visibility = 'hidden'; }
 });
 
 /*======= Nav Links Logic =======*/
@@ -2447,6 +2458,8 @@ window.addEventListener('error', e => {
         })
 
 </script>
+    
+
 
 </body>
 </html>
