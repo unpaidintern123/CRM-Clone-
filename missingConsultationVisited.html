@@ -784,6 +784,24 @@
             document.getElementById('spinnerOverlay').style.visibility = 'hidden';
             }
 
+        function formatLeadDateDisplay(str) {
+            if (!str) return "";
+            if (str instanceof Date && !isNaN(str.getTime())) return str.toLocaleDateString("en-GB");
+            const s = String(str).trim();
+            if (!s) return "";
+
+            const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            if (m) {
+                const day = String(m[1]).padStart(2, '0');
+                const month = String(m[2]).padStart(2, '0');
+                const year = m[3];
+                return `${day}/${month}/${year}`;
+            }
+            const d = new Date(s);
+            if (!isNaN(d.getTime())) return d.toLocaleDateString("en-GB");
+            return s;
+        }
+
         function fillTheTable(filteredLead){
             const missiongConsBody = document.getElementById("missiongConsBody");
 
@@ -798,7 +816,7 @@
                             <td><strong>${lead["client name"]}</strong></td>
                             <td>${lead["mobile no"]}</td>
                             <td class="hide-mobile">${lead["city"]}</td>
-                            <td>${new Date(lead["consultation visited date"]).toLocaleDateString("en-GB")}</td>
+                            <td>${formatLeadDateDisplay(lead["consultation visited date"])}</td>
                             <td class="hide-mobile">${lead["consultation type"]}</td>
                             <td class="hide-mobile">${lead["assigned to"]}</td>
                             <td>

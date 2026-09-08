@@ -307,6 +307,7 @@ function syncAssignmentUsersToFirestoreConfig() {
   const userData = sheet.getDataRange().getValues();
   const activeAssignees = [];
   const mondayEligibleAssignees = [];
+  const allUsersStatus = [];
 
   for (let i = 1; i < userData.length; i++) {
     const row = userData[i];
@@ -314,17 +315,21 @@ function syncAssignmentUsersToFirestoreConfig() {
     const status = String(row[3] || "").trim();
     const nextMonday = String(row[4] || "").trim();
 
-    if (username && status === "Active") {
-      activeAssignees.push(username);
-      if (nextMonday === "Coming") {
-        mondayEligibleAssignees.push(username);
+    if (username) {
+      allUsersStatus.push({ username, status });
+      if (status === "Active") {
+        activeAssignees.push(username);
+        if (nextMonday === "Coming") {
+          mondayEligibleAssignees.push(username);
+        }
       }
     }
   }
 
   const payload = {
     activeAssignees: activeAssignees,
-    mondayEligibleAssignees: mondayEligibleAssignees
+    mondayEligibleAssignees: mondayEligibleAssignees,
+    allUsersStatus: allUsersStatus
   };
 
   return crmApiProxy("/admin/sync-assignees", "POST", JSON.stringify(payload));
@@ -332,9 +337,9 @@ function syncAssignmentUsersToFirestoreConfig() {
 
 /**
  * Automatically triggers in real-time whenever someone edits the "Users" sheet.
- * Instantly syncs active/inactive users to Firestore without needing time triggers!
+ * Instantly syncs active/inactive users to Firestore!
  */
-function onEdit(e) {
+function installedOnEdit(e) {
   try {
     if (!e || !e.range) return;
     const sheetName = e.range.getSheet().getName();
@@ -343,8 +348,21 @@ function onEdit(e) {
       syncAssignmentUsersToFirestoreConfig();
     }
   } catch (err) {
-    Logger.log("onEdit sync error: " + err);
+    Logger.log("installedOnEdit sync error: " + err);
   }
+}
+
+function onEdit(e) {
+  installedOnEdit(e);
+}
+
+function installOnEditTrigger() {
+  const fn = "installedOnEdit";
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === fn) ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger(fn).forSpreadsheet(SpreadsheetApp.getActiveSpreadsheet()).onEdit().create();
+  Logger.log("Installed edit trigger for user sync");
 }
 
 
