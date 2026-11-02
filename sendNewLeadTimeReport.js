@@ -89,11 +89,11 @@ function savePublicPdf_(pdfBlob) {
   // Verify the sharing access is actually public
   const access = file.getSharingAccess();
   const isPublic = (access === DriveApp.Access.ANYONE_WITH_LINK ||
-                    access === DriveApp.Access.ANYONE);
+    access === DriveApp.Access.ANYONE);
 
   if (!isPublic) {
     throw new Error('PDF is NOT publicly accessible. Current access: ' + access +
-                    '. Check folder/Drive sharing restrictions (e.g. Workspace admin policy).');
+      '. Check folder/Drive sharing restrictions (e.g. Workspace admin policy).');
   }
 
   Logger.log('PDF verified public. Access: ' + access);
@@ -154,8 +154,8 @@ function parseDateCell_(val) {
 
 function isSameDay_(a, b) {
   return a.getFullYear() === b.getFullYear() &&
-         a.getMonth() === b.getMonth() &&
-         a.getDate() === b.getDate();
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
 }
 
 /**
@@ -177,13 +177,13 @@ function computeDeadline_(leadDate) {
   // Before opening (same day) -> by 12:00 PM today
   if (hour < startH) {
     const d = new Date(leadDate.getFullYear(), leadDate.getMonth(),
-                       leadDate.getDate(), CONFIG.SLA_AFTER_HOURS_DEADLINE, 0, 0);
+      leadDate.getDate(), CONFIG.SLA_AFTER_HOURS_DEADLINE, 0, 0);
     return { deadline: d, window: 'after_hours' };
   }
 
   // At/after closing (>= 20:00) -> by 12:00 PM next day
   const d = new Date(leadDate.getFullYear(), leadDate.getMonth(),
-                     leadDate.getDate() + 1, CONFIG.SLA_AFTER_HOURS_DEADLINE, 0, 0);
+    leadDate.getDate() + 1, CONFIG.SLA_AFTER_HOURS_DEADLINE, 0, 0);
   return { deadline: d, window: 'after_hours' };
 }
 
@@ -216,7 +216,7 @@ function buildStats_(rows, targetDate) {
     if (!contactDate) {
       p.notContacted++;
     } else if (contactDate.getTime() <= sla.deadline.getTime() &&
-               contactDate.getTime() >= leadDate.getTime()) {
+      contactDate.getTime() >= leadDate.getTime()) {
       p.onTime++;
     } else {
       p.delayed++;
@@ -263,19 +263,19 @@ function buildPdf_(stats, targetDate) {
   stats.people.forEach(function (p) {
     rowsHtml +=
       '<tr>' +
-        '<td class="name">' + escapeHtml_(p.name) + '</td>' +
-        '<td>' + p.assigned + '</td>' +
-        '<td>' + p.inHours + '</td>' +
-        '<td>' + p.afterHours + '</td>' +
-        '<td class="ok">' + p.onTime + '</td>' +
-        '<td class="bad">' + p.delayed + '</td>' +
-        '<td class="warn">' + p.notContacted + '</td>' +
-        '<td>' + p.onTimePct + '%</td>' +
+      '<td class="name">' + escapeHtml_(p.name) + '</td>' +
+      '<td>' + p.assigned + '</td>' +
+      '<td>' + p.inHours + '</td>' +
+      '<td>' + p.afterHours + '</td>' +
+      '<td class="ok">' + p.onTime + '</td>' +
+      '<td class="bad">' + p.delayed + '</td>' +
+      '<td class="warn">' + p.notContacted + '</td>' +
+      '<td>' + p.onTimePct + '%</td>' +
       '</tr>';
   });
   if (!rowsHtml) {
     rowsHtml = '<tr><td colspan="8" style="text-align:center;padding:20px;">' +
-               'No leads found for this day.</td></tr>';
+      'No leads found for this day.</td></tr>';
   }
 
   const html =
@@ -300,26 +300,26 @@ function buildPdf_(stats, targetDate) {
 
     '<h1>Lead-to-Contact Report</h1>' +
     '<div class="sub">Leads for <b>' + dateStr + '</b> &nbsp;|&nbsp; ' +
-      'Working hours: ' + CONFIG.WORK_START_HOUR + ':00-' + CONFIG.WORK_END_HOUR + ':00 &nbsp;|&nbsp; ' +
-      'In-hours SLA: ' + CONFIG.SLA_IN_HOURS_MIN + ' min &nbsp;|&nbsp; ' +
-      'After-hours SLA: by ' + CONFIG.SLA_AFTER_HOURS_DEADLINE + ':00 next day &nbsp;|&nbsp; ' +
-      'Generated: ' + genStr + '</div>' +
+    'Working hours: ' + CONFIG.WORK_START_HOUR + ':00-' + CONFIG.WORK_END_HOUR + ':00 &nbsp;|&nbsp; ' +
+    'In-hours SLA: ' + CONFIG.SLA_IN_HOURS_MIN + ' min &nbsp;|&nbsp; ' +
+    'After-hours SLA: by ' + CONFIG.SLA_AFTER_HOURS_DEADLINE + ':00 next day &nbsp;|&nbsp; ' +
+    'Generated: ' + genStr + '</div>' +
 
     '<div class="cards">' +
-      '<div class="card"><div class="num">' + t.assigned + '</div><div class="lbl">Total Leads</div></div>' +
-      '<div class="card"><div class="num ok">' + t.onTime + '</div><div class="lbl">On Time</div></div>' +
-      '<div class="card"><div class="num bad">' + t.delayed + '</div><div class="lbl">Delayed</div></div>' +
-      '<div class="card"><div class="num warn">' + t.notContacted + '</div><div class="lbl">Not Contacted</div></div>' +
-      '<div class="card"><div class="num">' + overallPct + '%</div><div class="lbl">On-Time Rate</div></div>' +
+    '<div class="card"><div class="num">' + t.assigned + '</div><div class="lbl">Total Leads</div></div>' +
+    '<div class="card"><div class="num ok">' + t.onTime + '</div><div class="lbl">On Time</div></div>' +
+    '<div class="card"><div class="num bad">' + t.delayed + '</div><div class="lbl">Delayed</div></div>' +
+    '<div class="card"><div class="num warn">' + t.notContacted + '</div><div class="lbl">Not Contacted</div></div>' +
+    '<div class="card"><div class="num">' + overallPct + '%</div><div class="lbl">On-Time Rate</div></div>' +
     '</div>' +
 
     '<table>' +
-      '<thead><tr>' +
-        '<th>Assigned To</th><th>Leads Received</th>' +
-        '<th>In-Hours</th><th>After-Hours</th>' +
-        '<th>On Time</th><th>Delayed</th><th>Not Contacted</th><th>On-Time %</th>' +
-      '</tr></thead>' +
-      '<tbody>' + rowsHtml + '</tbody>' +
+    '<thead><tr>' +
+    '<th>Assigned To</th><th>Leads Received</th>' +
+    '<th>In-Hours</th><th>After-Hours</th>' +
+    '<th>On Time</th><th>Delayed</th><th>Not Contacted</th><th>On-Time %</th>' +
+    '</tr></thead>' +
+    '<tbody>' + rowsHtml + '</tbody>' +
     '</table>' +
 
     '<div class="footer">Auto-generated from "' + CONFIG.SHEET_NAME + '". ' +
@@ -351,7 +351,7 @@ function buildWhatsAppMessage_(stats, targetDate, pdfUrl) {
   msg += 'Date: ' + dateStr + '\n';
   msg += 'Working Hours: ' + CONFIG.WORK_START_HOUR + ':00-' + CONFIG.WORK_END_HOUR + ':00\n';
   msg += 'In-hours SLA: ' + CONFIG.SLA_IN_HOURS_MIN + ' min | After-hours: by ' +
-         CONFIG.SLA_AFTER_HOURS_DEADLINE + ':00 next day\n\n';
+    CONFIG.SLA_AFTER_HOURS_DEADLINE + ':00 next day\n\n';
   msg += 'Total Leads: ' + t.assigned + '\n';
   msg += 'On Time: ' + t.onTime + '\n';
   msg += 'Delayed: ' + t.delayed + '\n';
@@ -360,8 +360,8 @@ function buildWhatsAppMessage_(stats, targetDate, pdfUrl) {
 
   stats.people.forEach(function (p) {
     msg += '• ' + p.name + ': ' + p.assigned + ' leads (' +
-           p.inHours + ' in-hrs, ' + p.afterHours + ' after-hrs) | ' +
-           p.onTime + ' on time, ' + p.delayed + ' delayed';
+      p.inHours + ' in-hrs, ' + p.afterHours + ' after-hrs) | ' +
+      p.onTime + ' on time, ' + p.delayed + ' delayed';
     if (p.notContacted) msg += ', ' + p.notContacted + ' not contacted';
     msg += '\n';
   });

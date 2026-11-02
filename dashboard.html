@@ -750,23 +750,32 @@
 
                         <div class="filter-group">
                             <label for="leadPlatform">Lead Platform</label>
+                            <!-- Options mirror PLATFORM_CATEGORIES in platformFilter.html -->
                             <select id="leadPlatform" name="leadPlatform">
                                   <option value="">All</option>
-                                  <option value="Gallabox">Gallabox</option>
-                                  <option value="Website">Website</option>
-                                  <option value="Social Media">Social Media</option>
-                                  <option value="Flexi Funnel">Flexi Funnel</option>
-                                  <option value="Whatsapp Ads">Whatsapp Ads</option>
-                                  <option value="Miscall">Miscall</option>
                                   <option value="Incoming">Incoming</option>
+                                  <option value="Website">Website</option>
+                                  <option value="Flexi Funnel">Flexi Funnel</option>
+                                  <option value="Instagram">Instagram</option>
+                                  <option value="Social Media">Social Media</option>
+                                  <option value="Gallabox">Gallabox</option>
+                                  <option value="Whatsapp Ads">Whatsapp Ads</option>
+                                  <option value="Ebook">Ebook</option>
+                                  <option value="Referral">Referral</option>
+                                  <option value="Manual Sheet Entry">Manual Sheet Entry</option>
+                                  <option value="Miscall">Miscall</option>
+                                  <option value="Unmapped">Unmapped</option>
                             </select>
                         </div>
                     </div>
 
-                    <!-- Second Row: Platform, City, Placement, Lead Status -->
+                    <!-- Second Row: Campaign Source, City, Placement, Lead Status -->
                     <div class="filters-row">
                         <div class="filter-group">
-                            <label for="platform">Platform</label>
+                            <!-- Reads Leads Data column AD (campaignsource), NOT column H (platform).
+                                 Element id intentionally left as "platform" - renaming it would break
+                                 dashboardFilters.html, jsDashboard.html and insightJS.html. -->
+                            <label for="platform">Campaign Source</label>
                             <select id="platform" name="platform">
 
                             </select>
@@ -1025,6 +1034,7 @@
       window.CRM_WEB_APP_BASE = "<?= CRM_WEB_APP_BASE ?>";
     </script>
     <?!= HtmlService.createHtmlOutputFromFile("apiClient").getContent() ?>
+    <?!= HtmlService.createHtmlOutputFromFile("platformFilter").getContent() ?>
     <?!= HtmlService.createHtmlOutputFromFile("jsDashboard").getContent() ?>
     <?!= HtmlService.createHtmlOutputFromFile("dashboardFilters").getContent() ?>
 </body>

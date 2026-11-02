@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f8fafc;
+      color: #0f172a;
+      padding: 18px 20px;
+      font-size: 13px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .header-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-auto {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 5px;
+    }
+
+    .req {
+      color: #ef4444;
+      margin-left: 2px;
+    }
+
+    input[type="text"],
+    input[type="tel"],
+    input[type="date"],
+    input[type="datetime-local"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 54px;
+    }
+
+    .conditional-card {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      display: none;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    .conditional-card.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .shortcuts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 5px;
+    }
+
+    .btn-chip {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 11px;
+      color: #475569;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+
+    .btn-chip:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .btn-chip.danger {
+      color: #dc2626;
+      border-color: #fecaca;
+    }
+
+    .alert {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-top: 12px;
+      display: none;
+      line-height: 1.5;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-success {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+    }
+
+    .alert-error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+
+    .alert-info {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s, transform 0.05s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #334155;
+    }
+
+    .btn-secondary:hover {
+      background: #cbd5e1;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .helper-text {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 3px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <div class="header-title">
+      <span>➕ Add New Lead</span>
+    </div>
+    <span class="badge-auto">⚡ Live Firebase Sync</span>
+  </div>
+
+  <form id="addLeadForm" onsubmit="submitNewLead(event)">
+    <div class="grid-2">
+      <!-- Client Name -->
+      <div class="form-group">
+        <label for="clientName">Client Name <span class="req">*</span></label>
+        <input type="text" id="clientName" placeholder="e.g. John Doe" required autofocus />
+      </div>
+
+      <!-- Mobile No -->
+      <div class="form-group">
+        <label for="mobileNo">Mobile Number <span class="req">*</span></label>
+        <input type="tel" id="mobileNo" placeholder="10-digit mobile no" required />
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- City -->
+      <div class="form-group">
+        <label for="city">City</label>
+        <input type="text" id="city" list="citiesList" placeholder="e.g. Mumbai, Delhi..." />
+        <datalist id="citiesList">
+          <option value="Mumbai"></option>
+          <option value="Delhi"></option>
+          <option value="Bangalore"></option>
+          <option value="Pune"></option>
+          <option value="Hyderabad"></option>
+          <option value="Chennai"></option>
+          <option value="Kolkata"></option>
+          <option value="Ahmedabad"></option>
+          <option value="Surat"></option>
+          <option value="Jaipur"></option>
+          <option value="Lucknow"></option>
+          <option value="Chandigarh"></option>
+        </datalist>
+      </div>
+
+      <!-- Platform / Source -->
+      <div class="form-group">
+        <label for="platform">Source / Platform</label>
+        <input type="text" id="platform" list="platformList" value="Manual Sheet Entry" />
+        <datalist id="platformList">
+          <option value="Manual Sheet Entry"></option>
+          <option value="Flexi Funnel"></option>
+          <option value="Instagram / Facebook"></option>
+          <option value="Website Direct"></option>
+          <option value="Referral"></option>
+          <option value="Walk-in"></option>
+        </datalist>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Assigned To (Fetched from Users sheet - Typable) -->
+      <div class="form-group">
+        <label for="assignedTo">Assigned To</label>
+        <input type="text" id="assignedTo" list="usersList" placeholder="Auto Round Robin (or type name)" />
+        <datalist id="usersList">
+          <option value="Unassigned"></option>
+        </datalist>
+        <div class="helper-text">Type name, select from dropdown, or leave blank to auto-assign.</div>
+      </div>
+
+      <!-- Lead Status (Typable) -->
+      <div class="form-group">
+        <label for="leadStatus">Lead Status</label>
+        <input type="text" id="leadStatus" list="leadStatusList" value="New Lead" oninput="onStatusChanged(this.value)" onchange="onStatusChanged(this.value)" />
+        <datalist id="leadStatusList">
+          <option value="New Lead"></option>
+          <option value="Consultation Booked"></option>
+          <option value="Consultation Visited"></option>
+          <option value="Warm Lead"></option>
+          <option value="Cold Lead 1"></option>
+          <option value="Cold Lead 2"></option>
+          <option value="Deferred Lead"></option>
+          <option value="Ringing / Busy"></option>
+          <option value="Not Reachable"></option>
+          <option value="Lost"></option>
+          <option value="Dead"></option>
+        </datalist>
+      </div>
+    </div>
+
+    <!-- Conditional Section 1: Consultation Booked -->
+    <div id="sectionConsultationBooked" class="conditional-card">
+      <div class="card-title">📅 Consultation Booking Details</div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="bookedDate">Booked Date & Time</label>
+          <input type="datetime-local" id="bookedDate" />
+          <div class="shortcuts">
+            <button type="button" class="btn-chip" onclick="setBookedShortcut(0, 14)">Today 2 PM</button>
+            <button type="button" class="btn-chip" onclick="setBookedShortcut(1, 11)">Tmrw 11 AM</button>
+            <button type="button" class="btn-chip" onclick="setBookedShortcut(1, 16)">Tmrw 4 PM</button>
+            <button type="button" class="btn-chip danger"
+              onclick="document.getElementById('bookedDate').value=''">Clear</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="consultationType">Consultation Mode / Type</label>
+          <input type="text" id="consultationType" list="consultationTypeList" value="In-person" />
+          <datalist id="consultationTypeList">
+            <option value="In-person"></option>
+            <option value="Online Consultation"></option>
+          </datalist>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conditional Section 2: Consultation Visited -->
+    <div id="sectionConsultationVisited" class="conditional-card">
+      <div class="card-title">🏥 Consultation Visited Details</div>
+      <div class="form-group">
+        <label for="visitedDate">Consultation Visited Date</label>
+        <input type="date" id="visitedDate" />
+        <div class="shortcuts">
+          <button type="button" class="btn-chip" onclick="setVisitedToday()">Today</button>
+          <button type="button" class="btn-chip" onclick="setVisitedYesterday()">Yesterday</button>
+          <button type="button" class="btn-chip danger"
+            onclick="document.getElementById('visitedDate').value=''">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conditional Section 3: Follow Up -->
+    <div id="sectionFollowUp" class="conditional-card">
+      <div class="card-title">⏰ Next Follow-Up Details</div>
+      <div class="form-group">
+        <label for="followUpDate">Next Follow-Up Date & Time</label>
+        <input type="datetime-local" id="followUpDate" />
+        <div class="shortcuts">
+          <button type="button" class="btn-chip" onclick="setFollowShortcut(0, 17)">Today 5 PM</button>
+          <button type="button" class="btn-chip" onclick="setFollowShortcut(1, 11)">Tmrw 11 AM</button>
+          <button type="button" class="btn-chip" onclick="setFollowShortcut(2, 11)">In 2 Days</button>
+          <button type="button" class="btn-chip" onclick="setFollowShortcut(7, 11)">In 1 Week</button>
+          <button type="button" class="btn-chip danger"
+            onclick="document.getElementById('followUpDate').value=''">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Initial Remark / Note -->
+    <div class="form-group">
+      <label for="initialRemark">Initial Remark / Note</label>
+      <textarea id="initialRemark" placeholder="Enter any initial notes, comments or call summary..."></textarea>
+    </div>
+
+    <div id="statusAlert" class="alert"></div>
+
+    <div class="actions">
+      <button type="button" class="btn btn-secondary" onclick="google.script.host.close()">Close</button>
+      <button type="submit" id="btnSubmit" class="btn btn-primary">
+        <span>💾 Save & Create Lead</span>
+      </button>
+    </div>
+  </form>
+
+  <script>
+    const FOLLOW_UP_STATUSES = new Set([
+      "Warm Lead",
+      "Cold Lead 1",
+      "Cold Lead 2",
+      "Deferred Lead",
+      "Ringing / Busy",
+      "Not Reachable"
+    ]);
+
+    window.onload = function () {
+      // Fetch users from Sheets Users tab
+      google.script.run
+        .withSuccessHandler(function (users) {
+          if (!users || !Array.isArray(users)) return;
+          const datalist = document.getElementById("usersList");
+          users.forEach(function (u) {
+            if (!u) return;
+            const opt = document.createElement("option");
+            opt.value = u;
+            datalist.appendChild(opt);
+          });
+        })
+        .withFailureHandler(function (err) {
+          console.warn("Could not load users list:", err);
+        })
+        .getActiveUsersList();
+
+      // Prevent Enter key from submitting the form when typing in input fields/dropdowns
+      const form = document.getElementById("addLeadForm");
+      if (form) {
+        form.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
+            e.preventDefault();
+          }
+        });
+      }
+
+      onStatusChanged(document.getElementById("leadStatus").value);
+    };
+
+    function onStatusChanged(status) {
+      const cardBooked = document.getElementById("sectionConsultationBooked");
+      const cardVisited = document.getElementById("sectionConsultationVisited");
+      const cardFollow = document.getElementById("sectionFollowUp");
+
+      cardBooked.classList.remove("active");
+      cardVisited.classList.remove("active");
+      cardFollow.classList.remove("active");
+
+      if (status === "Consultation Booked") {
+        cardBooked.classList.add("active");
+        if (!document.getElementById("bookedDate").value) {
+          setBookedShortcut(0, 14); // Default to today 2pm
+        }
+      } else if (status === "Consultation Visited") {
+        cardVisited.classList.add("active");
+        if (!document.getElementById("visitedDate").value) {
+          setVisitedToday();
+        }
+      } else if (FOLLOW_UP_STATUSES.has(status)) {
+        cardFollow.classList.add("active");
+        if (!document.getElementById("followUpDate").value) {
+          setFollowShortcut(1, 11); // Default to tomorrow 11am
+        }
+      }
+    }
+
+    function pad(n) {
+      return String(n).padStart(2, '0');
+    }
+
+    function formatDateTimeLocal(d) {
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function formatDateInput(d) {
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+
+    function setBookedShortcut(daysOffset, hours) {
+      const d = new Date();
+      d.setDate(d.getDate() + daysOffset);
+      d.setHours(hours, 0, 0, 0);
+      document.getElementById("bookedDate").value = formatDateTimeLocal(d);
+    }
+
+    function setFollowShortcut(daysOffset, hours) {
+      const d = new Date();
+      d.setDate(d.getDate() + daysOffset);
+      d.setHours(hours, 0, 0, 0);
+      document.getElementById("followUpDate").value = formatDateTimeLocal(d);
+    }
+
+    function setVisitedToday() {
+      document.getElementById("visitedDate").value = formatDateInput(new Date());
+    }
+
+    function setVisitedYesterday() {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      document.getElementById("visitedDate").value = formatDateInput(d);
+    }
+
+    function showAlert(type, message) {
+      const alert = document.getElementById("statusAlert");
+      alert.className = `alert show alert-${type}`;
+      alert.innerHTML = message;
+    }
+
+    function hideAlert() {
+      const alert = document.getElementById("statusAlert");
+      alert.className = "alert";
+      alert.innerHTML = "";
+    }
+
+    function submitNewLead(e) {
+      e.preventDefault();
+      hideAlert();
+
+      const clientName = document.getElementById("clientName").value.trim();
+      let mobileNo = document.getElementById("mobileNo").value.trim().replace(/\D/g, "");
+
+      if (!clientName) {
+        showAlert("error", "⚠️ Please enter Client Name.");
+        return;
+      }
+
+      if (!mobileNo || mobileNo.length < 10) {
+        showAlert("error", "⚠️ Please enter a valid 10-digit mobile number.");
+        return;
+      }
+
+      if (mobileNo.length === 12 && mobileNo.startsWith("91")) {
+        mobileNo = mobileNo.substring(2);
+      }
+
+      const city = document.getElementById("city").value.trim();
+      const platform = document.getElementById("platform").value.trim() || "Manual Sheet Entry";
+      const assignedTo = document.getElementById("assignedTo").value.trim();
+      const leadStatus = document.getElementById("leadStatus").value;
+      const initialRemark = document.getElementById("initialRemark").value.trim();
+
+      const bookedDateVal = document.getElementById("bookedDate").value;
+      const consultationType = document.getElementById("consultationType").value;
+      const visitedDateVal = document.getElementById("visitedDate").value;
+      const followUpDateVal = document.getElementById("followUpDate").value;
+
+      const payload = {
+        clientName: clientName,
+        mobileNo: mobileNo,
+        city: city,
+        platform: platform,
+        callType: "Outgoing",
+        leadStatus: leadStatus,
+        assignedTo: assignedTo,
+        initialRemark: initialRemark,
+        detailComment: initialRemark,
+        consultationType: leadStatus === "Consultation Booked" ? consultationType : "",
+        consutlationBookedDate: (leadStatus === "Consultation Booked" && bookedDateVal) ? bookedDateVal : "",
+        consutlationVisitedDate: (leadStatus === "Consultation Visited" && visitedDateVal) ? visitedDateVal : "",
+        followUpDate: (FOLLOW_UP_STATUSES.has(leadStatus) && followUpDateVal) ? followUpDateVal : ""
+      };
+
+      const btn = document.getElementById("btnSubmit");
+      btn.disabled = true;
+      btn.innerHTML = "<span>⏳ Saving to Firebase & Sheet...</span>";
+
+      google.script.run
+        .withSuccessHandler(function (res) {
+          btn.disabled = false;
+          btn.innerHTML = "<span>💾 Save & Create Lead</span>";
+
+          const leadId = (res && (res.leadUniqueId || (res.lead && res.lead.leadUniqueId))) || "New Lead";
+          const assignedUser = (res && res.lead && res.lead.assignedTo) || assignedTo || "Auto Assigned";
+
+          showAlert(
+            "success",
+            `🎉 <b>Success! Lead Created:</b> <span style="font-weight:700; color:#15803d;">${leadId}</span><br>` +
+            `👤 <b>Assigned To:</b> ${assignedUser}<br>` +
+            `✅ Stored in Firestore & appended to Google Sheets automatically.`
+          );
+
+          // Reset inputs for next lead
+          document.getElementById("clientName").value = "";
+          document.getElementById("mobileNo").value = "";
+          document.getElementById("city").value = "";
+          document.getElementById("initialRemark").value = "";
+          document.getElementById("clientName").focus();
+        })
+        .withFailureHandler(function (err) {
+          btn.disabled = false;
+          btn.innerHTML = "<span>💾 Save & Create Lead</span>";
+          const errMsg = err && err.message ? err.message : String(err);
+          showAlert("error", `❌ <b>Error creating lead:</b> ${errMsg}`);
+        })
+        .addNewLeadFromUi(payload);
+    }
+  </script>
+</body>
+
+</html>

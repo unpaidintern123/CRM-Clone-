@@ -48,6 +48,18 @@
         return proxyRequest(`/gas/${functionName}`, "POST", JSON.stringify(payload || {}));
       }
 
+      if (["retriveLeadData", "retriveLeadData2", "retriveConsData", "getCampaignName", "getLatestWeekEndData"].includes(functionName)) {
+        if (payload && typeof payload === "object") {
+          const queryParams = Object.entries(payload)
+            .filter(([_, v]) => v !== undefined && v !== null && v !== "")
+            .map(([k, v]) => encodeURIComponent(k) + "=" + encodeURIComponent(v))
+            .join("&");
+          const path = queryParams ? `/gas/${functionName}?${queryParams}` : `/gas/${functionName}`;
+          return proxyRequest(path, "GET", null);
+        }
+        return proxyRequest(`/gas/${functionName}`, "GET", null);
+      }
+
       if (payload !== undefined && payload !== null) {
         return proxyRequest(`/gas/${functionName}`, "POST", JSON.stringify(payload));
       }

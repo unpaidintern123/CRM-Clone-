@@ -756,6 +756,104 @@ body {
     box-shadow: 0 4px 15px rgba(74, 105, 189, 0.25);
 }
 
+/* Query / Inquiry Box */
+.query-form-row {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.query-form-group {
+    flex: 1 1 100% !important;
+    width: 100%;
+    min-width: 100%;
+}
+
+.query-box-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.query-icon {
+    font-size: 15px;
+}
+
+.query-box {
+    position: relative;
+    background-color: #f8f9fa;
+    border: 2px solid #ced4da;
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    cursor: default;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.query-box:hover {
+    border-color: #adb5bd;
+}
+
+.query-text-wrapper {
+    position: relative;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.query-text-wrapper.is-collapsed {
+    max-height: 44px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+}
+
+.query-text-wrapper.is-expanded {
+    max-height: 1200px;
+    overflow: visible;
+    display: block;
+}
+
+.query-text {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #495057;
+    white-space: pre-wrap;
+    word-break: break-word;
+    user-select: text;
+}
+
+.query-expand-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #4a69bd;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.query-expand-btn:hover {
+    background: #e0e7ff;
+    color: #3730a3;
+    border-color: #a5b4fc;
+}
+
+.query-expand-arrow {
+    display: inline-block;
+    font-size: 10px;
+    transition: transform 0.25s ease;
+}
+
 .optional-questions {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     padding: 25px;

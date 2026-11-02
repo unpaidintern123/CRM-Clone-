@@ -28,7 +28,9 @@ const filteredData = allParsedLeads.filter((lead)=>{
   const isCampaignNameMatch = campaignNameVal === "" ? true : lead["campaignname"] === campaignNameVal;
   const isadNameMatch = adNameVal === "" ? true : lead["adname"] === adNameVal;
   const isadSetNameMatch = adSetNameVal === "" ? true : lead["adsetname"] === adSetNameVal;
-  const isLeadPlatformMatch = leadPlatformVal === "" ? true : lead["platform"] === leadPlatformVal;
+  // Lead Platform = Leads Data column H, via the shared canonical resolver.
+  const isLeadPlatformMatch = matchesPlatform(lead["platform"], leadPlatformVal);
+  // "platform" element id is the Campaign Source control = column AD. Unchanged.
   const isPlatformMatch = platformVal === "" ? true : lead["campaignsource"] === platformVal;
   const isCityMatch = cityVal === "" ? true : lead["city"] === cityVal;
   const isPlacementMatch = placementVal === "" ? true : lead["placement"] === placementVal;

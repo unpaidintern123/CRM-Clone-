@@ -1418,6 +1418,7 @@
   window.CRM_WEB_APP_BASE = "<?= CRM_WEB_APP_BASE ?>";
 </script>
 <?!= HtmlService.createHtmlOutputFromFile("apiClient").getContent() ?>
+<?!= HtmlService.createHtmlOutputFromFile("platformFilter").getContent() ?>
 
     <!-- Spinner Overlay -->
     <div class="spinner-overlay" id="spinnerOverlay">
@@ -1491,15 +1492,21 @@
                     </div>
                     <div class="filter-compact">
                         <label for="platformFilter">Platform</label>
+                        <!-- Options mirror PLATFORM_CATEGORIES in platformFilter.html -->
                         <select id="platformFilter">
                             <option value="">All Platforms</option>
-                            <option value="Gallabox">Gallabox</option>
-                            <option value="Website">Website</option>
-                            <option value="Social Media">Social Media</option>
-                            <option value="Flexi Funnel">Flexi Funnel</option>
-                            <option value="Whatsapp Ads">Whatsapp Ads</option>
-                            <option value="Miscall">Miscall</option>
                             <option value="Incoming">Incoming</option>
+                            <option value="Website">Website</option>
+                            <option value="Flexi Funnel">Flexi Funnel</option>
+                            <option value="Instagram">Instagram</option>
+                            <option value="Social Media">Social Media</option>
+                            <option value="Gallabox">Gallabox</option>
+                            <option value="Whatsapp Ads">Whatsapp Ads</option>
+                            <option value="Ebook">Ebook</option>
+                            <option value="Referral">Referral</option>
+                            <option value="Manual Sheet Entry">Manual Sheet Entry</option>
+                            <option value="Miscall">Miscall</option>
+                            <option value="Unmapped">Unmapped</option>
                         </select>
                     </div>
                     <div class="filter-actions">
@@ -1934,7 +1941,10 @@ if (!loggedUser.username) {
   hideSpinner();
   redirectToLogin();
 } else if (typeof google !== "undefined" && google.script) {
-  crmApi.invokeGas("retriveLeadData2").then(onLeadsFetched).catch((err) => {
+  const fetchParams = loggedUser.permission !== "Admin" && loggedUser.username
+    ? { assignedTo: loggedUser.username }
+    : {};
+  crmApi.invokeGas("retriveLeadData2", fetchParams).then(onLeadsFetched).catch((err) => {
     console.error("retriveLeadData2 failed", err);
     hideSpinner();
   });
@@ -1997,7 +2007,7 @@ function filterByCriteria(start, end, person, city, platform) {
     const cityMatch = city ? (city === 'Others'
       ? !["Mumbai", "Delhi", "Bangalore"].includes(lead.city)
       : lead.city === city) : true;
-    const platformMatch = platform ? lead.platform === platform : true;
+    const platformMatch = matchesPlatform(lead.platform, platform);
     return inRange(lead) && crmMatch && cityMatch && platformMatch;
   };
 
@@ -2006,7 +2016,7 @@ function filterByCriteria(start, end, person, city, platform) {
     const cityMatch = city ? (city === 'Others'
       ? !["Mumbai", "Delhi", "Bangalore"].includes(lead.city)
       : lead.city === city) : true;
-    const platformMatch = platform ? lead.platform === platform : true;
+    const platformMatch = matchesPlatform(lead.platform, platform);
     return inRangeConsultation(lead) && crmMatch && cityMatch && platformMatch;
   };
 

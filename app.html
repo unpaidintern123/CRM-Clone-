@@ -20,19 +20,65 @@ toggleBtn.addEventListener('click', () => {
     console.log('Sidebar toggled:', sidebar.classList.contains('collapsed') ? 'Collapsed' : 'Expanded');
 });
 
-// Date and time function 
+// Date and time parser & formatter function
+
+function parseDate(input) {
+  if (!input) return null;
+  if (input instanceof Date) {
+    return isNaN(input.getTime()) ? null : input;
+  }
+  if (typeof input !== 'string') {
+    const d = new Date(input);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  const str = input.trim();
+  if (!str) return null;
+
+  // Try parsing DD-MM-YYYY or DD/MM/YYYY first (standard date format in Indian Google Sheets)
+  const dmyMatch = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?\s*(AM|PM)?)?/i);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10) - 1;
+    const year = parseInt(dmyMatch[3], 10);
+    let hours = dmyMatch[4] ? parseInt(dmyMatch[4], 10) : 0;
+    const minutes = dmyMatch[5] ? parseInt(dmyMatch[5], 10) : 0;
+    const seconds = dmyMatch[6] ? parseInt(dmyMatch[6], 10) : 0;
+    const ampm = dmyMatch[7] ? dmyMatch[7].toUpperCase() : null;
+
+    if (ampm === "PM" && hours < 12) hours += 12;
+    if (ampm === "AM" && hours === 12) hours = 0;
+
+    const d = new Date(year, month, day, hours, minutes, seconds);
+    if (!isNaN(d.getTime())) {
+      return d;
+    }
+  }
+
+  // Fallback to standard JS Date parser
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+}
 
 function formatDate(input) {
-  const date = new Date(input);
+  const date = parseDate(input);
+  if (!date) return input || "";
+
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  return `${date.getDate().toString().padStart(2, '0')} ${
-           months[date.getMonth()]
-         } ${date.getFullYear()} ${
-           date.getHours().toString().padStart(2, '0')}:${
-           date.getMinutes().toString().padStart(2, '0')}:${
-           date.getSeconds().toString().padStart(2, '0')}`;
+  const day = date.getDate().toString().padStart(2, '0');
+  const mon = months[date.getMonth()];
+  const year = date.getFullYear();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const seconds = date.getSeconds();
+
+  // Match OG cards: always show HH:mm:ss (including 00:00:00 when sheet has midnight).
+  return `${day} ${mon} ${year} ${
+           hours.toString().padStart(2, '0')}:${
+           minutes.toString().padStart(2, '0')}:${
+           seconds.toString().padStart(2, '0')}`;
 }
 
 // Populate Form Function 
@@ -42,10 +88,7 @@ function populateLeadForm(lead){
   clearLeadPriorityPending();
   //Set Lead Date
   const leadDate = document.getElementById("leadDate");
-  leadDate.value = (() => { 
-  let d = new Date(lead["lead date"]); 
-  return isNaN(d) ? '' : toLocalISOString(d); 
-})();
+  leadDate.value = toLocalISOString(lead["lead date"]);
 
   if(lead["preferred time to call"]){
     document.querySelector(".preferred-time-badge").style.display = 'flex';
@@ -116,6 +159,52 @@ if (lead["call type"] === "Incoming") {
   const interestedIn = document.getElementById("interestedIn");
   interestedIn.value = lead["interested in"] || "";
 
+  //Set Query / Inquiry Box
+  const queryRow = document.getElementById("queryRow");
+  const queryText = document.getElementById("queryText");
+  const queryTextWrapper = document.getElementById("queryTextWrapper");
+  const queryExpandBtn = document.getElementById("queryExpandBtn");
+
+  if (queryRow && queryText) {
+    const rawQuery = lead["query"] || lead["Query"] || lead["customer remark"] || lead["Customer Remark"] || lead["remarks"] || lead["Remarks"] || lead["inquiry"] || lead["Inquiry"] || lead.query || lead.inquiry || "";
+    const queryVal = (rawQuery !== null && rawQuery !== undefined) ? String(rawQuery).trim() : "";
+
+    if (queryVal !== "") {
+      queryText.textContent = queryVal;
+      queryRow.classList.remove("hide");
+
+      if (queryTextWrapper) {
+        queryTextWrapper.classList.remove("is-expanded");
+        queryTextWrapper.classList.add("is-collapsed");
+      }
+
+      if (queryExpandBtn) {
+        const expandText = queryExpandBtn.querySelector(".query-expand-text");
+        const expandArrow = queryExpandBtn.querySelector(".query-expand-arrow");
+        if (expandText) expandText.textContent = "View more";
+        if (expandArrow) {
+          expandArrow.textContent = "▼";
+          expandArrow.style.transform = "rotate(0deg)";
+        }
+
+        setTimeout(() => {
+          if (queryTextWrapper) {
+            const isOverflowing = queryTextWrapper.scrollHeight > 52 || queryVal.length > 90 || (queryVal.indexOf("\n") !== -1);
+            if (isOverflowing) {
+              queryExpandBtn.classList.remove("hide");
+            } else {
+              queryExpandBtn.classList.add("hide");
+            }
+          }
+        }, 50);
+      }
+    } else {
+      queryText.textContent = "";
+      queryRow.classList.add("hide");
+      if (queryExpandBtn) queryExpandBtn.classList.add("hide");
+    }
+  }
+
   //Set Rating 
   const rating = document.getElementById("rating");
   rating.value = lead["rating"] || "";
@@ -125,25 +214,16 @@ if (lead["call type"] === "Incoming") {
   leadStatus.value = lead["lead status"] || "";
 
   //Set Follow Up Date 
-  
   const followUpDate = document.getElementById("followUpDate");
-  followUpDate.value = (() => { 
-  let d = new Date(lead["follow up date"]); 
-  return isNaN(d) ? '' : toLocalISOString(d); 
-})();
-
+  followUpDate.value = toLocalISOString(lead["follow up date"]);
 
   //Set No of follow ups
   const noOfFollowups = document.getElementById("noOfFollowups");
   noOfFollowups.value = lead["no of follow ups"] || "";
 
   //Set Consultation booked Date
-
   const consutlationBookedDate = document.getElementById("consutlationBookedDate");
-  consutlationBookedDate.value = (() => { 
-  let d = new Date(lead["consultation booked date"]); 
-  return isNaN(d) ? '' : toLocalISOString(d); 
-})();
+  consutlationBookedDate.value = toLocalISOString(lead["consultation booked date"]);
 
   //Set Consultation Type
   const consultationType = document.getElementById("consultationType");
@@ -153,13 +233,9 @@ if (lead["call type"] === "Incoming") {
   const consultStatus = document.getElementById("consultationStatus");
   consultationStatus.value = lead["consultation status"] || "";
 
-  //Set Consultation visited Date
-
+  //Set Consultation visited Date (datetime — same as booked, so card/form can show real time)
   const consutlationVisitedDate = document.getElementById("consutlationVisitedDate");
-  consutlationVisitedDate.value =   (() => { 
-  let d = new Date(lead["consultation visited date"]); 
-  return isNaN(d) ? '' : toLocalDateOnlyString(d); 
-})() ;
+  consutlationVisitedDate.value = toLocalISOString(lead["consultation visited date"]);
 
   const hearAboutUs = document.getElementById("hearAboutUs");
   hearAboutUs.value = lead["how did you hear about us?"] || "";
@@ -229,16 +305,18 @@ if (lead["call type"] === "Incoming") {
 
 // Change Dates from UTC to IST
 
-function toLocalISOString(date) {
-  if (!(date instanceof Date) || isNaN(date)) return "";
+function toLocalISOString(input) {
+  const date = parseDate(input);
+  if (!date) return "";
 
   const offsetInMinutes = date.getTimezoneOffset(); // For IST, this will be -330
   const localDate = new Date(date.getTime() - offsetInMinutes * 60000);
   return localDate.toISOString().slice(0, 16);
 }
 
-function toLocalDateOnlyString(date) {
-  if (!(date instanceof Date) || isNaN(date)) return "";
+function toLocalDateOnlyString(input) {
+  const date = parseDate(input);
+  if (!date) return "";
 
   const offsetInMinutes = date.getTimezoneOffset();
   const localDate = new Date(date.getTime() - offsetInMinutes * 60000);
@@ -251,37 +329,47 @@ function toLocalDateOnlyString(date) {
 }
 
 
-// Update lead-list-container ( Lead Card ) //follow //booked //lost //new
+const loggedUser = JSON.parse(localStorage.getItem("loggedInUser")) || {};
+console.log(loggedUser);
+const userDialogEl = document.getElementById("dialog-username");
+if (userDialogEl) userDialogEl.textContent = loggedUser.username || "User";
+const permDialogEl = document.getElementById("dialog-permission");
+if (permDialogEl) permDialogEl.textContent = loggedUser.permission || "Agent";
 
-crmApi.invokeGas("retriveLeadData")
+// Update lead-list-container ( Lead Card ) //follow //booked //lost //new
+const fetchParams = loggedUser.username && loggedUser.permission !== "Admin"
+  ? { assignedTo: loggedUser.username }
+  : (loggedUser.username ? { assignedTo: loggedUser.username } : {});
+
+crmApi.invokeGas("retriveLeadData", fetchParams)
   .then(retriveLeadSuccess)
   .catch((err) => console.error("retriveLeadData failed", err));
 
 function retriveLeadSuccess(userData) {
   allLeadData = JSON.parse(userData);
-  makeLeadCard(allLeadData.filter( lead => lead["lead status"] == "New Lead" && lead["assigned to"] === loggedUser.username));
-  const span = newLeadBtn.querySelector(".count");
-  span.textContent = allLeadData.filter( lead => lead["lead status"] == "New Lead" && lead["assigned to"] === loggedUser.username).length;
-  updateStageCounts()
+  const newLeadStageBtn = document.querySelector(".new-lead");
+  // Sort/filter for New Lead *before* painting cards (pass stage so order never uses stale tab).
+  makeLeadCard(
+    allLeadData.filter(lead => lead["lead status"] == "New Lead" && (!loggedUser.username || lead["assigned to"] === loggedUser.username)),
+    newLeadStageBtn
+  );
+  const span = newLeadStageBtn ? newLeadStageBtn.querySelector(".count") : null;
+  if (span) {
+    span.textContent = allLeadData.filter(lead => lead["lead status"] == "New Lead" && (!loggedUser.username || lead["assigned to"] === loggedUser.username)).length;
+  }
+  updateStageCounts();
   const firstLeadCard = document.querySelector('.lead-card');
   if (firstLeadCard) {
-  firstLeadCard.click();
+    firstLeadCard.click();
   }
-  document.getElementById('spinnerOverlay').style.opacity = '0';
-  document.getElementById('spinnerOverlay').style.visibility = 'hidden';
-
-            //   opacity: 0;
-            // visibility: hidden;
+  const spinner = document.getElementById('spinnerOverlay');
+  if (spinner) {
+    spinner.style.opacity = '0';
+    spinner.style.visibility = 'hidden';
+  }
 }
 
-
-
-const loggedUser = JSON.parse(localStorage.getItem("loggedInUser"));
-console.log(loggedUser);
-document.getElementById("dialog-username").textContent = loggedUser.username;
-document.getElementById("dialog-permission").textContent = loggedUser.permission;
-
-function makeLeadCard(filteredData) {
+function makeLeadCard(filteredData, stageHint) {
   const leadListContainer = document.querySelector(".lead-list-container");
   
    if (filteredData === null || filteredData.length === 0) {
@@ -301,24 +389,59 @@ function getRelevantDate(lead) {
   );
 }
 
-
- // ✅ Sort by lead date descending (latest first)
-
-const isFollowUpStage = ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"]
-  .includes(filteredData[0]["lead status"]);
-
-const isConsultationStage = ["Consultation Booked", "Consultation Visited"]
-  .includes(filteredData[0]["lead status"]);
-
-const isNewOrLostStage = ["New Lead", "Lost", "Dead","Not Visited Lost"].includes(filteredData[0]["lead status"]);
-
-if (isNewOrLostStage) {
-  filteredData.sort((a, b) => new Date(getRelevantDate(b)) - new Date(getRelevantDate(a)));
+function leadSheetOrderKey(lead) {
+  const id = String(lead["lead unique id"] || "");
+  const m = id.match(/(\d+)\s*$/);
+  return m ? Number(m[1]) : Number.MAX_SAFE_INTEGER;
 }
 
-if (isFollowUpStage || isConsultationStage) {
-  filteredData.sort((a, b) => new Date(getRelevantDate(a)) - new Date(getRelevantDate(b)));
+function dateMs(lead) {
+  const d = parseDate(getRelevantDate(lead));
+  return d ? d.getTime() : 0;
 }
+
+  // Prefer explicit stage from the click handler so we never sort with the *previous* tab's rules
+  // (All used to render Lost-first because makeLeadCard ran before .active moved to All).
+  const activeStageBtn =
+    (typeof stageHint === "string"
+      ? document.querySelector(`.stage-btn.${stageHint}`)
+      : stageHint) || document.querySelector(".stage-btn.active");
+  const isAllStage = activeStageBtn && activeStageBtn.classList.contains("all-stage");
+
+  if (isAllStage) {
+    // All tab: match OG visual order — Visited group first, Lost last.
+    // (Firebase updatedAt-desc made Lost [0] and flipped OG into newest-first Lost-on-top.)
+    const allStatusRank = (status) => {
+      if (status === "Consultation Visited") return 0;
+      if (status === "Consultation Booked") return 1;
+      if (["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy", "Not Reachable"].includes(status)) return 2;
+      if (status === "New Lead") return 3;
+      if (["Lost", "Dead", "Not Visited Lost"].includes(status)) return 4;
+      return 5;
+    };
+    filteredData.sort((a, b) => {
+      const rankDiff = allStatusRank(a["lead status"]) - allStatusRank(b["lead status"]);
+      if (rankDiff !== 0) return rankDiff;
+      // Within same status: same as OG consultation/follow (oldest relevant date first)
+      const timeDiff = dateMs(a) - dateMs(b);
+      if (timeDiff !== 0) return timeDiff;
+      return leadSheetOrderKey(a) - leadSheetOrderKey(b);
+    });
+  } else {
+    // Single-status tabs: exact OG rules (sort direction from that status)
+    const isFollowUpStage = ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"]
+      .includes(filteredData[0]["lead status"]);
+    const isConsultationStage = ["Consultation Booked", "Consultation Visited"]
+      .includes(filteredData[0]["lead status"]);
+    const isNewOrLostStage = ["New Lead", "Lost", "Dead","Not Visited Lost"].includes(filteredData[0]["lead status"]);
+
+    if (isNewOrLostStage) {
+      filteredData.sort((a, b) => dateMs(b) - dateMs(a));
+    }
+    if (isFollowUpStage || isConsultationStage) {
+      filteredData.sort((a, b) => dateMs(a) - dateMs(b));
+    }
+  }
 
   const dataForCard = filteredData.map((lead,index) => {
     const phone = String(lead["mobile no"]).length === 10 
@@ -472,23 +595,23 @@ leadPriorityCancelBtn.addEventListener("click", function() {
 });
 
 
+function setActiveStageButton(activeBtn) {
+  document.querySelectorAll(".stage-btn").forEach((btn) => btn.classList.remove("active"));
+  if (activeBtn) activeBtn.classList.add("active");
+}
+
 //All lead Button
 const contactFilterGroup = document.getElementById("contactNoFilter").closest(".filter-group");
 const allBtn = document.querySelector(".all-stage");
 
 allBtn.addEventListener("click",()=>{
-  makeLeadCard(allLeadData.filter(lead => lead["assigned to"] === loggedUser.username));
+  setActiveStageButton(allBtn);
   contactFilterGroup.classList.remove("hide");
-  allBtn.classList.add("active");
-  newLeadBtn.classList.remove("active");
-  followupBtn.classList.remove("active");
-  consultationBtn.classList.remove("active");
   statusFilterGroup.classList.add("hide");
   dateFilterGroup.classList.add("hide");
   startDateGroup.classList.add("hide");
   endDateGroup.classList.add("hide");
-  lostBtn.classList.remove("active");
-  consultationVisitedBtn.classList.remove("active");
+  makeLeadCard(allLeadData.filter(lead => lead["assigned to"] === loggedUser.username), allBtn);
   allBtn.querySelector(".count").textContent = allLeadData.filter(lead => lead["assigned to"] === loggedUser.username).length;
   const firstLeadCard = document.querySelector('.lead-card');
   if (firstLeadCard) {
@@ -505,19 +628,14 @@ const newLeadBtn = document.querySelector(".new-lead");
 const orderStatusFilterGroup = document.getElementById("orderStatusFilter").closest(".filter-group");
 
 newLeadBtn.addEventListener("click",()=>{
-makeLeadCard(allLeadData.filter( lead => lead["lead status"] == "New Lead" && lead["assigned to"] === loggedUser.username ));
-newLeadBtn.classList.add("active");
-followupBtn.classList.remove("active");
-consultationBtn.classList.remove("active");
+setActiveStageButton(newLeadBtn);
 statusFilterGroup.classList.add("hide");
-lostBtn.classList.remove("active");
-consultationVisitedBtn.classList.remove("active");
-allBtn.classList.remove("active");
 contactFilterGroup.classList.add("hide");
 dateFilterGroup.classList.add("hide");
 startDateGroup.classList.remove("hide");
 endDateGroup.classList.remove("hide");
 orderStatusFilterGroup.classList.add("hide");
+makeLeadCard(allLeadData.filter( lead => lead["lead status"] == "New Lead" && lead["assigned to"] === loggedUser.username ), newLeadBtn);
 const span = newLeadBtn.querySelector(".count");
 span.textContent = allLeadData.filter( lead => lead["lead status"] == "New Lead" && lead["assigned to"] === loggedUser.username).length;
 const firstLeadCard = document.querySelector('.lead-card');
@@ -529,33 +647,26 @@ firstLeadCard.click();
 //Follow up btn
 const followupBtn = document.querySelector(".followup-stage");
 followupBtn.addEventListener("click",()=>{
-
-makeLeadCard(allLeadData.filter( lead => {
-const leadDate = new Date(lead["follow up date"]);
-const todayStartD = new Date(new Date().toISOString().split('T')[0] + "T00:00:00");
-const todayEndD = new Date(new Date().toISOString().split('T')[0] + "T23:59:00");
-const isDateMatch = leadDate >= todayStartD && leadDate <= todayEndD;
-
-return isDateMatch && ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username }));
-
-
-newLeadBtn.classList.remove("active");
-followupBtn.classList.add("active");
-consultationBtn.classList.remove("active");
-lostBtn.classList.remove("active");
-consultationVisitedBtn.classList.remove("active");
-allBtn.classList.remove("active");
+setActiveStageButton(followupBtn);
 statusFilterGroup.classList.remove("hide");
 contactFilterGroup.classList.add("hide");
 dateFilterGroup.classList.remove("hide");
 startDateGroup.classList.add("hide");
 endDateGroup.classList.add("hide");
 orderStatusFilterGroup.classList.add("hide");
+makeLeadCard(allLeadData.filter( lead => {
+const leadDate = parseDate(lead["follow up date"]);
+const todayStartD = new Date(new Date().toISOString().split('T')[0] + "T00:00:00");
+const todayEndD = new Date(new Date().toISOString().split('T')[0] + "T23:59:00");
+const isDateMatch = leadDate && leadDate >= todayStartD && leadDate <= todayEndD;
+
+return isDateMatch && ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username }), followupBtn);
+
 followupBtn.querySelector(".count").textContent = allLeadData.filter( lead =>{ 
-  const leadDate = new Date(lead["follow up date"]);
+  const leadDate = parseDate(lead["follow up date"]);
   const todayStartD = new Date(new Date().toISOString().split('T')[0] + "T00:00:00");
   const todayEndD = new Date(new Date().toISOString().split('T')[0] + "T23:59:00");
-  const isDateMatch = leadDate >= todayStartD && leadDate <= todayEndD;
+  const isDateMatch = leadDate && leadDate >= todayStartD && leadDate <= todayEndD;
 
   return isDateMatch && ["Warm Lead", "Cold Lead 1", "Cold Lead 2", "Deferred Lead", "Ringing / Busy","Not Reachable"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username}).length;
 
@@ -568,19 +679,14 @@ firstLeadCard.click();
 //Consultation Booked 
 const consultationBtn = document.querySelector(".consultation-booked");
 consultationBtn.addEventListener("click",()=>{
-makeLeadCard(allLeadData.filter( lead => ["Consultation Booked"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username));
-newLeadBtn.classList.remove("active");
-followupBtn.classList.remove("active");
-consultationBtn.classList.add("active");
-lostBtn.classList.remove("active");
-consultationVisitedBtn.classList.remove("active");
-allBtn.classList.remove("active");
+setActiveStageButton(consultationBtn);
 statusFilterGroup.classList.add("hide");
 contactFilterGroup.classList.add("hide");
 dateFilterGroup.classList.add("hide");
 startDateGroup.classList.remove("hide");
 endDateGroup.classList.remove("hide");
 orderStatusFilterGroup.classList.add("hide");
+makeLeadCard(allLeadData.filter( lead => ["Consultation Booked"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username), consultationBtn);
 consultationBtn.querySelector(".count").textContent = allLeadData.filter( lead => ["Consultation Booked"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username).length;
 
 const firstLeadCard = document.querySelector('.lead-card');
@@ -592,19 +698,14 @@ firstLeadCard.click();
 //lost
 const lostBtn = document.querySelector(".lost-stage");
 lostBtn.addEventListener("click",()=>{
-makeLeadCard(allLeadData.filter( lead => ["Lost", "Dead","Not Visited Lost"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username));
-newLeadBtn.classList.remove("active");
-followupBtn.classList.remove("active");
-consultationBtn.classList.remove("active");
-lostBtn.classList.add("active");
-consultationVisitedBtn.classList.remove("active");
-allBtn.classList.remove("active");
+setActiveStageButton(lostBtn);
 statusFilterGroup.classList.add("hide");
 contactFilterGroup.classList.add("hide");
 dateFilterGroup.classList.add("hide");
 startDateGroup.classList.remove("hide");
 endDateGroup.classList.remove("hide");
 orderStatusFilterGroup.classList.add("hide");
+makeLeadCard(allLeadData.filter( lead => ["Lost", "Dead","Not Visited Lost"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username), lostBtn);
 lostBtn.querySelector(".count").textContent = allLeadData.filter( lead => ["Lost", "Dead","Not Visited Lost"].includes(lead["lead status"]) && lead["assigned to"] === loggedUser.username).length;
 const firstLeadCard = document.querySelector('.lead-card');
 if (firstLeadCard) {
@@ -616,19 +717,14 @@ firstLeadCard.click();
 //Consultation Visited BTN 
 const consultationVisitedBtn = document.querySelector(".consultation-visited");
 consultationVisitedBtn.addEventListener("click",()=>{
-makeLeadCard(allLeadData.filter( lead => lead["lead status"] === "Consultation Visited" && lead["assigned to"] === loggedUser.username));
-newLeadBtn.classList.remove("active");
-followupBtn.classList.remove("active");
-consultationBtn.classList.remove("active");
-lostBtn.classList.remove("active");
-consultationVisitedBtn.classList.add("active");
-allBtn.classList.remove("active");
+setActiveStageButton(consultationVisitedBtn);
 statusFilterGroup.classList.add("hide");
 contactFilterGroup.classList.add("hide");
 dateFilterGroup.classList.add("hide");
 startDateGroup.classList.remove("hide");
 endDateGroup.classList.remove("hide");
 orderStatusFilterGroup.classList.remove("hide");
+makeLeadCard(allLeadData.filter( lead => lead["lead status"] === "Consultation Visited" && lead["assigned to"] === loggedUser.username), consultationVisitedBtn);
 consultationVisitedBtn.querySelector(".count").textContent = allLeadData.filter( lead => lead["lead status"] === "Consultation Visited" && lead["assigned to"] === loggedUser.username).length;
 
 const firstLeadCard = document.querySelector('.lead-card');
@@ -645,16 +741,17 @@ function updateStageCounts() {
 
   followupBtn.querySelector(".count").textContent =
     allLeadData.filter(lead => {
-const leadDate = new Date(lead["follow up date"]);
-       let isDateMatch = null;
+const leadDate = parseDate(lead["follow up date"]);
+       let isDateMatch = false;
       const dateFilterVal = document.getElementById("dateFilter").value;
-        if(dateFilterVal === "Today"){
+        if (!leadDate) {
+          isDateMatch = false;
+        } else if(dateFilterVal === "Today"){
           const todayStartD = new Date(new Date().toISOString().split('T')[0] + "T00:00:00");
           const todayEndD = new Date(new Date().toISOString().split('T')[0] + "T23:59:00");
           isDateMatch = leadDate >= todayStartD && leadDate <= todayEndD;
           }else if(dateFilterVal === "Past") {
               const todayStartD = new Date(new Date().toISOString().split('T')[0] + "T00:00:00");
-              const todayEndD = new Date(new Date().toISOString().split('T')[0] + "T23:59:00");
               isDateMatch = leadDate <= todayStartD;
           }else {
               isDateMatch = true;
@@ -1111,11 +1208,35 @@ allInputs.forEach(input => {
 // Console log for debugging (remove in production)
 console.log('Post-Consultation Form Script Loaded Successfully');
 
+// Query expand/collapse toggle handler
+(function initQueryToggle() {
+  const queryExpandBtn = document.getElementById("queryExpandBtn");
+  const queryTextWrapper = document.getElementById("queryTextWrapper");
+  if (!queryExpandBtn || !queryTextWrapper) return;
 
+  queryExpandBtn.addEventListener("click", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const isExpanded = queryTextWrapper.classList.contains("is-expanded");
+    const expandText = queryExpandBtn.querySelector(".query-expand-text");
+    const expandArrow = queryExpandBtn.querySelector(".query-expand-arrow");
 
-
-
-
-
+    if (isExpanded) {
+      queryTextWrapper.classList.remove("is-expanded");
+      queryTextWrapper.classList.add("is-collapsed");
+      if (expandText) expandText.textContent = "View more";
+      if (expandArrow) {
+        expandArrow.style.transform = "rotate(0deg)";
+      }
+    } else {
+      queryTextWrapper.classList.remove("is-collapsed");
+      queryTextWrapper.classList.add("is-expanded");
+      if (expandText) expandText.textContent = "View less";
+      if (expandArrow) {
+        expandArrow.style.transform = "rotate(180deg)";
+      }
+    }
+  });
+})();
 
 </script>

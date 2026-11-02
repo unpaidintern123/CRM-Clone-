@@ -1497,15 +1497,21 @@
                     </div>
                     <div class="filter-compact">
                         <label for="platformFilter">Platform</label>
+                        <!-- Options mirror PLATFORM_CATEGORIES in platformFilter.html -->
                         <select id="platformFilter">
                             <option value="">All Platforms</option>
-                            <option value="Gallabox">Gallabox</option>
-                            <option value="Website">Website</option>
-                            <option value="Social Media">Social Media</option>
-                            <option value="Flexi Funnel">Flexi Funnel</option>
-                            <option value="Whatsapp Ads">Whatsapp Ads</option>
-                            <option value="Miscall">Miscall</option>
                             <option value="Incoming">Incoming</option>
+                            <option value="Website">Website</option>
+                            <option value="Flexi Funnel">Flexi Funnel</option>
+                            <option value="Instagram">Instagram</option>
+                            <option value="Social Media">Social Media</option>
+                            <option value="Gallabox">Gallabox</option>
+                            <option value="Whatsapp Ads">Whatsapp Ads</option>
+                            <option value="Ebook">Ebook</option>
+                            <option value="Referral">Referral</option>
+                            <option value="Manual Sheet Entry">Manual Sheet Entry</option>
+                            <option value="Miscall">Miscall</option>
+                            <option value="Unmapped">Unmapped</option>
                         </select>
                     </div>
                     <div class="filter-actions">
@@ -1870,6 +1876,7 @@
       window.CRM_WEB_APP_BASE = "<?= CRM_WEB_APP_BASE ?>";
     </script>
     <?!= HtmlService.createHtmlOutputFromFile("apiClient").getContent() ?>
+    <?!= HtmlService.createHtmlOutputFromFile("platformFilter").getContent() ?>
     <?!= HtmlService.createHtmlOutputFromFile("crmDashJS").getContent() ?>
 
 

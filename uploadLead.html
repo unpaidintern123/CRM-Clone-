@@ -1040,7 +1040,7 @@
                     <div class="form-row hide" id="consultationVisitedRow">
                         <div class="form-group">
                             <label for="consutlationVisitedDate">Consultation Visited Date <span>*</span></label>
-                            <input type="date" id="consutlationVisitedDate" name="consutlationVisitedDate" class="response">
+                            <input type="datetime-local" id="consutlationVisitedDate" name="consutlationVisitedDate" class="response">
                         </div> 
                     </div>
 
@@ -1056,6 +1056,8 @@
                                 <option value="Facebook">Facebook</option>
                                 <option value="Whatsapp Ads">Whatsapp Ads</option>
                                 <option value="Flexi Funnel">Flexi Funnel</option>
+                                <option value="Incoming Through Ads">Incoming Through Ads</option>
+                                 <option value="Incoming through main phone">Incoming through main phone</option>
                                 <option value="Others">Others</option>
                             </select>
                         </div>
@@ -1403,13 +1405,15 @@
 
         function onSuccess(message){
             const successMessage = document.getElementById('successMessage');
+            // Match OG: always show the same short success HTML (never dump API JSON).
+            let showHtml = "<strong>Success!</strong> Lead has been uploaded successfully.";
             if (typeof message === "string") {
-                successMessage.innerHTML = message;
-            } else if (message && message.success) {
-                successMessage.innerHTML = "Lead uploaded successfully";
-            } else {
-                successMessage.innerHTML = "Lead upload completed";
+                const trimmed = message.trim();
+                if (trimmed.indexOf("<") !== -1 && !trimmed.startsWith("{")) {
+                    showHtml = trimmed;
+                }
             }
+            successMessage.innerHTML = showHtml;
             setTimeout(() => {
                 submitBtn.classList.remove('loading');
                 submitBtn.disabled = false;

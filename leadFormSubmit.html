@@ -51,6 +51,11 @@ leadResponseDatabase.leadDate = getLocalDatetimeString(document.getElementById("
 leadResponseDatabase.followUpDate = getLocalDatetimeString(document.getElementById("followUpDate"));
 leadResponseDatabase.consutlationBookedDate = getLocalDatetimeString(document.getElementById("consutlationBookedDate"));
 leadResponseDatabase.consutlationVisitedDate = getLocalDatetimeString(document.getElementById("consutlationVisitedDate"));
+// Priority lives outside the named form fields — include it so Update Lead does not wipe leadLabel.
+const priorityEl = document.getElementById("leadPriority");
+if (priorityEl) {
+  leadResponseDatabase.leadLabel = priorityEl.value || "";
+}
 console.log(leadResponseDatabase);
 
   crmApi.invokeGas("updateLeadDetails", leadResponseDatabase)
@@ -104,6 +109,9 @@ if (isLegacyPayload) {
     "sales amount": serverRes.updatedLead.totalSalesAmount || "",
     "not booked feedback": serverRes.updatedLead.notBookedFeedback || "",
     "order date": serverRes.updatedLead.orderDate || "",
+    "lead label": serverRes.updatedLead.leadLabel || "",
+    "query": serverRes.updatedLead.query || "",
+    "Query": serverRes.updatedLead.query || "",
   };
   const idx = allLeadData.findIndex((lead) => lead["lead unique id"] === updatedLeadLegacy["lead unique id"]);
   if (idx >= 0) {
@@ -114,8 +122,12 @@ if (isLegacyPayload) {
 } else if (typeof serverRes === "object" && serverRes !== null) {
   allLeadData = serverRes;
 }
-console.log("Data added sucessfully!!")
-// console.log(allLeadData);
+console.log("Data added sucessfully!!");
+
+// Immediately update stage badge counts from the refreshed in-memory lead data
+if (typeof updateStageCounts === "function") {
+  updateStageCounts();
+}
 
 //For Consultation Visit Disable Logic
 consultationVisitedOption.disabled = true;
@@ -125,7 +137,6 @@ const updatedLead = allLeadData.find(lead => lead["lead unique id"] === updatedI
 
 if(updatedLead){
   populateLeadForm(updatedLead);
-  
 }
 
  const activeStageBtn = document.querySelector(".stage-btn.active");

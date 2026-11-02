@@ -1,5 +1,16 @@
 function getCampaignName() {
-  const sheet = SpreadsheetApp.openById("1awaq6gNQspr-sjp-yuaH-Nu5JJmhyplVRevoaj47JZw").getSheetByName("Leads Data");
+  const props = PropertiesService.getScriptProperties();
+  const baseUrl = props.getProperty("CRM_API_BASE_URL");
+  if (baseUrl && typeof crmApiProxy === "function") {
+    try {
+      const result = crmApiProxy("/gas/getCampaignName", "GET", null);
+      if (result) return result;
+    } catch (e) {
+      Logger.log("getCampaignName API call failed, falling back to sheet: " + e);
+    }
+  }
+
+  const sheet = SpreadsheetApp.openById("1fiqGa4nRkSkun-nffI_QVtFQG4o4ubJGXkMIcEprI1k").getSheetByName("Leads Data");
 
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
@@ -12,10 +23,10 @@ function getCampaignName() {
   const adSetName = headers.indexOf("AdSetName");
 
   const campaignNames = [...new Set(rows.map((row) => row[campaignNameIndex]).filter((val) => val !== ""))];
-  const adNames = [...new Set(rows.map((row) => row[adNameIndex]).filter((val) => val !== ""))]
-  const platforms = [...new Set(rows.map((row) => row[campaignSourceIndex]).filter((val) => val !== ""))]
-  const placements = [...new Set(rows.map((row) => row[placementIndex]).filter((val) => val !== ""))]
-  const adSetNames = [...new Set(rows.map((row) => row[adSetName]).filter((val) => val !== ""))]
+  const adNames = [...new Set(rows.map((row) => row[adNameIndex]).filter((val) => val !== ""))];
+  const platforms = [...new Set(rows.map((row) => row[campaignSourceIndex]).filter((val) => val !== ""))];
+  const placements = [...new Set(rows.map((row) => row[placementIndex]).filter((val) => val !== ""))];
+  const adSetNames = [...new Set(rows.map((row) => row[adSetName]).filter((val) => val !== ""))];
 
   return {
     campaignNames: campaignNames,
@@ -23,22 +34,28 @@ function getCampaignName() {
     platforms: platforms,
     placements: placements,
     adSetNames: adSetNames
-  }
+  };
 }
 
-function retriveLeadData2() {
+function retriveLeadData2(filters) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Leads Data");
   const data = sheet.getDataRange().getValues();
-  const headings = data[0]
+  const headings = data[0];
   const leadData = data.splice(1);
-  const leadDataBase = []
+  const leadDataBase = [];
+  const assignedCol = headings.map(h => String(h || "").trim().toLowerCase()).indexOf("assigned to");
+  const targetUser = filters && typeof filters === "object" ? String(filters.assignedTo || "").trim() : "";
+
   leadData.forEach((lead) => {
-    let obj = {}
+    if (targetUser && assignedCol !== -1 && String(lead[assignedCol] || "").trim() !== targetUser) {
+      return;
+    }
+    let obj = {};
     headings.forEach((heading, index) => {
       obj[heading.toLowerCase()] = lead[index];
-    })
-    leadDataBase.push(obj)
-  })
+    });
+    leadDataBase.push(obj);
+  });
   return JSON.stringify(leadDataBase);
 }
 

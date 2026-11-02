@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM Dashboard - American Hairline</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>
+    window.CRM_USE_API_PROXY = "<?= CRM_USE_API_PROXY ?>";
+    window.CRM_WEB_APP_BASE = "<?= CRM_WEB_APP_BASE ?>";
+  </script>
+  <?!= HtmlService.createHtmlOutputFromFile("apiClient").getContent() ?>
+  <?!= HtmlService.createHtmlOutputFromFile("platformFilter").getContent() ?>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+
+    /* Left Navigation - Standard CRM Sidebar */
+    .sidebar {
+      width: 220px;
+      background-color: #2c3e50;
+      color: white;
+      padding: 20px 0;
+      height: 100%;
+      overflow-y: auto;
+      transition: width 0.3s ease;
+      z-index: 1000;
+      flex-shrink: 0;
+      box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
+      border-right: 2px solid #1a252f;
+    }
+
+    .sidebar.collapsed {
+      width: 60px;
+    }
+
+    .sidebar-header {
+      padding: 0 15px 20px;
+      border-bottom: 2px solid #34495e;
+      display: flex;
+      align-items: center;
+    }
+
+    .sidebar-header i {
+      margin-right: 10px;
+      font-size: 24px;
+      cursor: pointer;
+      font-style: normal;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-header i:hover {
+      transform: rotate(90deg);
+    }
+
+    .sidebar-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .sidebar.collapsed .sidebar-header h2,
+    .sidebar.collapsed .nav-links a {
+      display: none;
+    }
+
+    .nav-links {
+      padding: 15px;
+    }
+
+    .nav-links a {
+      display: block;
+      color: #ecf0f1;
+      text-decoration: none;
+      padding: 12px 15px;
+      font-size: 14px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nav-links a:hover, .nav-links a.active {
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      transform: translateX(5px);
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    /* Professional Compact Filter Bar - Matching CRM */
+    .professional-filter-bar {
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+      border-bottom: 2px solid #e9ecef;
+      box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .filter-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      min-height: 45px;
+    }
+
+    .dashboard-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #2c3e50;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      line-height: 1.2;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tag-insta {
+      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .filters-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .filter-compact {
+      display: flex;
+      flex-direction: column;
+      min-width: 110px;
+    }
+
+    .filter-compact label {
+      font-size: 10px;
+      color: #666;
+      margin-bottom: 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .filter-compact select,
+    .filter-compact input {
+      padding: 4px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+      background: white;
+      height: 28px;
+      outline: none;
+    }
+
+    .filter-compact select:focus,
+    .filter-compact input:focus {
+      border-color: #3498db;
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.15);
+    }
+
+    .btn-compact {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      height: 28px;
+      margin-top: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-compact:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+    }
+
+    .btn-pdf {
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+    }
+
+    .btn-pdf:hover {
+      box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
+    }
+
+    .user-profile-badge {
+      font-size: 12px;
+      font-weight: 700;
+      color: #2c3e50;
+      background: #eef2f7;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #dce4ec;
+      white-space: nowrap;
+    }
+
+    /* Dashboard Body */
+    .dashboard-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* KPI Metrics Cards - Matching personDashboard metric-card-pro style */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+    }
+
+    .metric-card-pro {
+      background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+
+    .metric-card-pro:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .metric-card-pro::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 4px;
+      background: var(--card-accent, #3498db);
+    }
+
+    .metric-card-pro.card-blue { --card-accent: linear-gradient(135deg, #3498db, #2980b9); }
+    .metric-card-pro.card-purple { --card-accent: linear-gradient(135deg, #9b59b6, #8e44ad); }
+    .metric-card-pro.card-orange { --card-accent: linear-gradient(135deg, #f39c12, #e67e22); }
+    .metric-card-pro.card-green { --card-accent: linear-gradient(135deg, #2ecc71, #27ae60); }
+    .metric-card-pro.card-gold { --card-accent: linear-gradient(135deg, #16a085, #1abc9c); }
+    .metric-card-pro.card-red { --card-accent: linear-gradient(135deg, #e74c3c, #c0392b); }
+
+    .metric-label {
+      font-size: 10.5px;
+      color: #7f8c8d;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: #2c3e50;
+      margin-bottom: 4px;
+      line-height: 1;
+    }
+
+    .metric-sub {
+      font-size: 11px;
+      color: #95a5a6;
+      font-weight: 600;
+    }
+
+    /* 2 Column Layout */
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .dashboard-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e9ecef;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f8f9fa;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #2c3e50;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Problem Root-Cause List */
+    .problem-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .problem-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 3px solid #e74c3c;
+    }
+
+    .problem-info h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 2px;
+    }
+
+    .problem-info p {
+      font-size: 11.5px;
+      color: #7f8c8d;
+    }
+
+    .problem-count-badge {
+      font-size: 12px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #fee2e2;
+      color: #dc2626;
+      white-space: nowrap;
+    }
+
+    /* Table Styling */
+    .table-container {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid #e9ecef;
+    }
+
+    .custom-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      background: white;
+    }
+
+    .custom-table th {
+      background: linear-gradient(135deg, #34495e, #2c3e50);
+      color: white;
+      padding: 10px 12px;
+      font-weight: 700;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+
+    .custom-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #ecf0f1;
+      vertical-align: middle;
+      color: #2c3e50;
+    }
+
+    .custom-table tbody tr:hover {
+      background-color: #f8f9fa;
+    }
+
+    .badge-status {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status-visited { background: #dcfce7; color: #15803d; }
+    .status-booked { background: #e0f2fe; color: #0369a1; }
+    .status-warm { background: #fef3c7; color: #b45309; }
+    .status-lost { background: #fee2e2; color: #b91c1c; }
+    .status-new { background: #f1f5f9; color: #64748b; }
+
+    /* Action Buttons in Table */
+    .btn-action-pdf {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 4px;
+      border: 1px solid #e74c3c;
+      background: #fff;
+      color: #e74c3c;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-action-pdf:hover {
+      background: #e74c3c;
+      color: white;
+    }
+
+    .btn-action-filter {
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 4px;
+      border: 1px solid #3498db;
+      background: #fff;
+      color: #3498db;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-action-filter:hover {
+      background: #3498db;
+      color: white;
+    }
+
+    .conversion-rate-pill {
+      font-size: 12px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 12px;
+      display: inline-block;
+    }
+
+    .conversion-rate-zero {
+      background: #fee2e2;
+      color: #c0392b;
+    }
+
+    .conversion-rate-positive {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    /* Spinner Overlay */
+    .spinner-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: all 0.3s;
+    }
+
+    .spinner-box {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #2c3e50;
+    }
+
+    .spinner-ring {
+      width: 36px; height: 36px;
+      border: 3px solid #e9ecef;
+      border-top-color: #3498db;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Hidden Container for PDF Generation */
+    #pdfReportTemplate {
+      display: none;
+    }
+
+    @media (max-width: 1200px) {
+      .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+      .grid-2col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading Spinner -->
+  <div class="spinner-overlay" id="spinnerOverlay">
+    <div class="spinner-box">
+      <div class="spinner-ring"></div>
+      <div id="spinnerText">Loading Social Media & Instagram Analysis...</div>
+    </div>
+  </div>
+
+  <!-- Left Sidebar Navigation - Exact CRM Standard -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <i class="sidebar-toggle">≡</i>
+      <h2>CRM</h2>
+    </div>
+    <div class="nav-links">
+      <a href="#" class="dashboard">Dashboard</a>
+      <a href="#" class="socialDashboard active">Insta / Social Analysis</a>
+      <a href="#" class="allLeads">All Leads</a>
+      <a href="#" class="uploadLead">Upload Lead</a>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    
+    <!-- Professional Compact Filter Bar -->
+    <div class="professional-filter-bar">
+      <div class="filter-row">
+        <div class="dashboard-title">
+          <span class="tag-insta">INSTA / SOCIAL</span>
+          Weekly Analysis
+        </div>
+
+        <div class="filters-left">
+          <div class="filter-compact">
+            <label>Timeframe</label>
+            <select id="timeRangeSelect" onchange="handleTimeRangeChange()">
+              <option value="this_week">Current Week</option>
+              <option value="last_week">Last Week</option>
+              <option value="september_2026" selected>September 2026</option>
+              <option value="august_2026">August 2026</option>
+              <option value="july_2026">July 2026</option>
+              <option value="last_3_months">Last 3 Months</option>
+              <option value="custom">Custom Date Range</option>
+            </select>
+          </div>
+
+          <div class="filter-compact" id="customStartBox" style="display: none;">
+            <label>Start Date</label>
+            <input type="date" id="customStartDate">
+          </div>
+
+          <div class="filter-compact" id="customEndBox" style="display: none;">
+            <label>End Date</label>
+            <input type="date" id="customEndDate">
+          </div>
+
+          <button class="btn-compact" onclick="applyFilters()">Filter</button>
+          <button class="btn-compact btn-pdf" onclick="downloadOverallPdfReport()">📄 Download Full PDF Report</button>
+        </div>
+
+        <div class="user-profile-badge">
+          👤 Assigned: <span id="userNameLabel">Loading...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard-body">
+      
+      <!-- KPI Metrics Row with Prominent Conversion Rate -->
+      <div class="kpi-grid">
+        <div class="metric-card-pro card-blue">
+          <div class="metric-label">Total Inbound</div>
+          <div class="metric-value" id="kpiTotal">0</div>
+          <div class="metric-sub">Assigned social leads</div>
+        </div>
+
+        <div class="metric-card-pro card-purple">
+          <div class="metric-label">Contacted</div>
+          <div class="metric-value" id="kpiReached">0</div>
+          <div class="metric-sub" id="kpiReachedPct">0% reached</div>
+        </div>
+
+        <div class="metric-card-pro card-orange">
+          <div class="metric-label">Follow-Ups</div>
+          <div class="metric-value" id="kpiFollowup">0</div>
+          <div class="metric-sub">Active pipeline</div>
+        </div>
+
+        <div class="metric-card-pro card-green">
+          <div class="metric-label">Consultations Visited</div>
+          <div class="metric-value" id="kpiVisited">0</div>
+          <div class="metric-sub" id="kpiVisitSub">0 clinic visits</div>
+        </div>
+
+        <div class="metric-card-pro card-gold">
+          <div class="metric-label">Conversion Rate</div>
+          <div class="metric-value" id="kpiConversionRate" style="color: #16a085;">0.0%</div>
+          <div class="metric-sub" id="kpiConversionSub">Visit conversion rate</div>
+        </div>
+
+        <div class="metric-card-pro card-red">
+          <div class="metric-label">Unconverted</div>
+          <div class="metric-value" id="kpiLost">0</div>
+          <div class="metric-sub" id="kpiLostPct">0% non-converted</div>
+        </div>
+      </div>
+
+      <!-- NEW: Week-by-Week Analysis Breakdown Table with PDF Action Buttons -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <div class="card-title">
+            📅 Week-by-Week Performance Analysis & Conversion Reports
+          </div>
+          <span style="font-size: 11.5px; color: #7f8c8d; font-weight: 600;">Download dedicated PDF report for each individual week</span>
+        </div>
+
+        <div class="table-container">
+          <table class="custom-table" id="weeklyBreakdownTable">
+            <thead>
+              <tr>
+                <th>Week Period</th>
+                <th style="text-align:center;">Inbound Leads</th>
+                <th style="text-align:center;">Contacted (%)</th>
+                <th style="text-align:center;">Follow-Ups</th>
+                <th style="text-align:center;">Clinic Visited</th>
+                <th style="text-align:center;">Conversion Rate</th>
+                <th>Primary Drop-Off Root Cause</th>
+                <th style="text-align:center;">Actions / Export</th>
+              </tr>
+            </thead>
+            <tbody id="weeklyTableBody">
+              <!-- Dynamically populated per week -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Funnel & Problem Analysis Grid -->
+      <div class="grid-2col">
+        
+        <!-- Status Funnel Chart -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <div class="card-title">📊 Status & Contact Funnel</div>
+            <span style="font-size: 11px; color: #7f8c8d; font-weight: 600;">Progression Breakdown</span>
+          </div>
+          <div style="height: 220px; position: relative;">
+            <canvas id="statusChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Problem Breakdown ("What Was The Problem?") -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <div class="card-title">⚠️ Non-Conversion Root Causes ("What Was The Problem?")</div>
+            <span style="font-size: 11px; color: #e74c3c; font-weight: 700;">Drop-Off Drivers</span>
+          </div>
+          <div class="problem-list" id="problemListContainer">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Lead-by-Lead Reference Log -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <div class="card-title">📑 Assigned Social Media Leads Audit Log</div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="searchInput" placeholder="Search name, phone, notes..." oninput="filterLeadTable()" style="padding: 4px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 200px;">
+            <span id="tableCountBadge" style="font-size: 11.5px; font-weight: 700; color: #3498db;">0 Leads</span>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Lead ID</th>
+                <th>Lead Date</th>
+                <th>Client Name</th>
+                <th>Contact</th>
+                <th>City</th>
+                <th>Platform</th>
+                <th>Lead Status</th>
+                <th>Inquiry Notes / Remarks</th>
+                <th>Detected Problem Reason</th>
+              </tr>
+            </thead>
+            <tbody id="leadsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    /* ========== Navigation and Sidebar Event Listeners ========== */
+    document.addEventListener('DOMContentLoaded', () => {
+      const sidebar = document.querySelector('.sidebar');
+      const toggleBtn = document.querySelector('.sidebar-toggle');
+      if (sidebar) sidebar.classList.add('collapsed');
+      if (toggleBtn) toggleBtn.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+
+      const dashboardBtn = document.querySelector('.dashboard');
+      if (dashboardBtn) dashboardBtn.addEventListener('click', (e) => { e.preventDefault(); crmApi.navigateToPage('personDashboard'); });
+
+      const allLeadsBtn = document.querySelector('.allLeads');
+      if (allLeadsBtn) allLeadsBtn.addEventListener('click', (e) => { e.preventDefault(); crmApi.navigateToPage('Home'); });
+
+      const uploadLeadBtn = document.querySelector('.uploadLead');
+      if (uploadLeadBtn) uploadLeadBtn.addEventListener('click', (e) => { e.preventDefault(); crmApi.navigateToPage('uploadLead'); });
+    });
+
+    /* ========== State & Variables ========== */
+    let allLeadsRaw = [];
+    let currentFilteredLeads = [];
+    let weeklyAnalysisData = [];
+    let statusChartInstance = null;
+
+    const loggedUser = (() => {
+      try {
+        const raw = localStorage.getItem("loggedInUser");
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return { username: "User", permission: "User" };
+    })();
+
+    /* ========== App Initialization ========== */
+    document.addEventListener("DOMContentLoaded", () => {
+      const username = loggedUser.username || "User";
+      document.getElementById("userNameLabel").textContent = username;
+      loadCRMData();
+    });
+
+    function showSpinner(text = "Loading Social Media & Instagram Analysis...") {
+      const el = document.getElementById("spinnerOverlay");
+      const txt = document.getElementById("spinnerText");
+      if (txt) txt.textContent = text;
+      if (el) el.style.display = "flex";
+    }
+
+    function hideSpinner() {
+      const el = document.getElementById("spinnerOverlay");
+      if (el) el.style.display = "none";
+    }
+
+    /* ========== Data Loading ========== */
+    function loadCRMData() {
+      showSpinner();
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        if (window.crmApi && crmApi.invokeGas) {
+          crmApi.invokeGas("retriveLeadData2")
+            .then(data => {
+              allLeadsRaw = typeof data === "string" ? JSON.parse(data) : data;
+              applyFilters();
+              hideSpinner();
+            })
+            .catch(err => {
+              console.error("Failed to load CRM data via proxy", err);
+              fallbackDirectLoad();
+            });
+        } else {
+          fallbackDirectLoad();
+        }
+      } else {
+        setTimeout(hideSpinner, 400);
+      }
+    }
+
+    function fallbackDirectLoad() {
+      google.script.run
+        .withSuccessHandler(data => {
+          allLeadsRaw = JSON.parse(data);
+          applyFilters();
+          hideSpinner();
+        })
+        .withFailureHandler(err => {
+          console.error("retriveLeadData2 direct failed", err);
+          hideSpinner();
+        })
+        .retriveLeadData2();
+    }
+
+    /* ========== Date Parsing Helper ========== */
+    function parseDate(str) {
+      if (!str) return null;
+      if (str instanceof Date) return isNaN(str.getTime()) ? null : str;
+      const clean = String(str).trim();
+      
+      const dmy = clean.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+      if (dmy) {
+        const d = parseInt(dmy[1], 10);
+        const m = parseInt(dmy[2], 10) - 1;
+        const y = parseInt(dmy[3], 10);
+        const hh = dmy[4] ? parseInt(dmy[4], 10) : 0;
+        const mm = dmy[5] ? parseInt(dmy[5], 10) : 0;
+        const ss = dmy[6] ? parseInt(dmy[6], 10) : 0;
+        return new Date(y, m, d, hh, mm, ss);
+      }
+      const parsed = new Date(clean);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatDateDisplay(d) {
+      if (!d) return "-";
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    /* ========== Filter Logic ========== */
+    function handleTimeRangeChange() {
+      const sel = document.getElementById("timeRangeSelect").value;
+      const isCustom = sel === "custom";
+      document.getElementById("customStartBox").style.display = isCustom ? "flex" : "none";
+      document.getElementById("customEndBox").style.display = isCustom ? "flex" : "none";
+      if (!isCustom) applyFilters();
+    }
+
+    function getDateRangeForSelection() {
+      const sel = document.getElementById("timeRangeSelect").value;
+      const now = new Date();
+
+      if (sel === "this_week") {
+        const first = now.getDate() - now.getDay();
+        const start = new Date(now.getFullYear(), now.getMonth(), first, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), first + 6, 23, 59, 59);
+        return { start, end, label: "Current Week" };
+      }
+      if (sel === "last_week") {
+        const first = now.getDate() - now.getDay() - 7;
+        const start = new Date(now.getFullYear(), now.getMonth(), first, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), first + 6, 23, 59, 59);
+        return { start, end, label: "Last Week" };
+      }
+      if (sel === "september_2026") {
+        return { start: new Date(2026, 8, 1, 0, 0, 0), end: new Date(2026, 8, 30, 23, 59, 59), label: "September 2026" };
+      }
+      if (sel === "august_2026") {
+        return { start: new Date(2026, 7, 1, 0, 0, 0), end: new Date(2026, 7, 31, 23, 59, 59), label: "August 2026" };
+      }
+      if (sel === "july_2026") {
+        return { start: new Date(2026, 6, 1, 0, 0, 0), end: new Date(2026, 6, 31, 23, 59, 59), label: "July 2026" };
+      }
+      if (sel === "last_3_months") {
+        return { start: new Date(2026, 6, 1, 0, 0, 0), end: new Date(2026, 8, 30, 23, 59, 59), label: "Last 3 Months (Jul - Sep 2026)" };
+      }
+      if (sel === "custom") {
+        const sVal = document.getElementById("customStartDate").value;
+        const eVal = document.getElementById("customEndDate").value;
+        const start = sVal ? new Date(sVal + "T00:00:00") : new Date(2020, 0, 1);
+        const end = eVal ? new Date(eVal + "T23:59:59") : new Date(2030, 11, 31);
+        return { start, end, label: `Custom (${formatDateDisplay(start)} - ${formatDateDisplay(end)})` };
+      }
+      return { start: new Date(2020, 0, 1), end: new Date(2030, 11, 31), label: "All Time" };
+    }
+
+    function applyFilters() {
+      const { start, end } = getDateRangeForSelection();
+      const currUser = (loggedUser.username || "").toLowerCase().trim();
+
+      currentFilteredLeads = allLeadsRaw.filter(lead => {
+        // Platform Filter: this dashboard intentionally keeps BOTH categories together.
+        // Resolved through the shared canonical resolver so the category definitions
+        // live in one place, but the combined population is unchanged.
+        const cat = canonicalPlatform(lead.platform);
+        const isSocial = cat === "Social Media" || cat === "Instagram";
+        if (!isSocial) return false;
+
+        // User Assignment Filter: Strictly only show leads assigned to the logged-in person
+        const assigned = String(lead["assigned to"] || lead["assignedTo"] || lead.assignedTo || "").trim().toLowerCase();
+        if (currUser && assigned !== currUser) return false;
+
+        // Date Range Filter
+        const d = parseDate(lead["lead date"] || lead.leadDate);
+        if (!d) return true;
+        return d >= start && d <= end;
+      });
+
+      renderDashboardMetrics(currentFilteredLeads);
+      buildAndRenderWeeklyBreakdown(currentFilteredLeads, start, end);
+      renderProblemAudit(currentFilteredLeads);
+      renderLeadsTable(currentFilteredLeads);
+    }
+
+    /* ========== Metric Calculations ========== */
+    function renderDashboardMetrics(leads) {
+      const total = leads.length;
+      const unreachedStatuses = ["ringing / busy", "not reachable", "no response", "invalid", "new"];
+      
+      const reached = leads.filter(l => !unreachedStatuses.includes(String(l["lead status"] || "").trim().toLowerCase())).length;
+      const followup = leads.filter(l => ["warm lead", "cold lead 1", "cold lead 2", "deferred lead"].includes(String(l["lead status"] || "").trim().toLowerCase())).length;
+      const visited = leads.filter(l => String(l["lead status"] || "").trim().toLowerCase() === "consultation visited").length;
+      const lost = leads.filter(l => ["lost", "dead"].includes(String(l["lead status"] || "").trim().toLowerCase())).length;
+      const convRate = total > 0 ? ((visited / total) * 100).toFixed(1) : "0.0";
+
+      document.getElementById("kpiTotal").textContent = total;
+      document.getElementById("kpiReached").textContent = reached;
+      document.getElementById("kpiReachedPct").textContent = total > 0 ? `${Math.round((reached / total) * 100)}% reached` : "0%";
+      
+      document.getElementById("kpiFollowup").textContent = followup;
+      document.getElementById("kpiVisited").textContent = visited;
+      document.getElementById("kpiVisitSub").textContent = `${visited} clinic visits`;
+
+      document.getElementById("kpiConversionRate").textContent = `${convRate}%`;
+      document.getElementById("kpiConversionSub").textContent = visited > 0 ? `${visited}/${total} converted` : "0 visits recorded";
+      
+      document.getElementById("kpiLost").textContent = (total - visited);
+      document.getElementById("kpiLostPct").textContent = total > 0 ? `${(((total - visited) / total) * 100).toFixed(1)}% non-converted` : "0%";
+
+      renderStatusChart(reached, followup, visited, (total - visited), total);
+    }
+
+    /* ========== Status Funnel Chart ========== */
+    function renderStatusChart(reached, followup, visited, lost, total) {
+      const ctx = document.getElementById("statusChart").getContext("2d");
+      if (statusChartInstance) statusChartInstance.destroy();
+
+      statusChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Total Inbound', 'Contacted', 'Follow-Ups', 'Visited', 'Lost / Stalled'],
+          datasets: [{
+            label: 'Leads Count',
+            data: [total, reached, followup, visited, lost],
+            backgroundColor: [
+              '#3498db',
+              '#9b59b6',
+              '#f39c12',
+              '#2ecc71',
+              '#e74c3c'
+            ],
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    /* ========== Week-by-Week Analysis Engine ========== */
+    function buildAndRenderWeeklyBreakdown(leads, startRange, endRange) {
+      const tbody = document.getElementById("weeklyTableBody");
+      tbody.innerHTML = "";
+      weeklyAnalysisData = [];
+
+      if (leads.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 20px; color: #7f8c8d;">No leads recorded for this selection.</td></tr>`;
+        return;
+      }
+
+      // Group leads by distinct week brackets
+      const weeksMap = new Map();
+
+      leads.forEach(l => {
+        const d = parseDate(l["lead date"] || l.leadDate);
+        if (!d) return;
+
+        // Create standard calendar week key (Month & Week of Month: 1-7, 8-14, 15-21, 22-28, 29-End)
+        const year = d.getFullYear();
+        const month = d.getMonth();
+        const day = d.getDate();
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        let weekNum = 1;
+        let startDay = 1;
+        let endDay = 7;
+
+        if (day <= 7) {
+          weekNum = 1; startDay = 1; endDay = 7;
+        } else if (day <= 14) {
+          weekNum = 2; startDay = 8; endDay = 14;
+        } else if (day <= 21) {
+          weekNum = 3; startDay = 15; endDay = 21;
+        } else if (day <= 28) {
+          weekNum = 4; startDay = 22; endDay = 28;
+        } else {
+          weekNum = 5; startDay = 29;
+          const lastDateOfMonth = new Date(year, month + 1, 0).getDate();
+          endDay = lastDateOfMonth;
+        }
+
+        const weekKey = `${year}_${month}_W${weekNum}`;
+        const weekLabel = `Week ${weekNum} (${startDay} ${monthNames[month]} - ${endDay} ${monthNames[month]} ${year})`;
+
+        if (!weeksMap.has(weekKey)) {
+          weeksMap.set(weekKey, {
+            key: weekKey,
+            weekNum: weekNum,
+            monthName: monthNames[month],
+            year: year,
+            label: weekLabel,
+            startDate: new Date(year, month, startDay, 0, 0, 0),
+            endDate: new Date(year, month, endDay, 23, 59, 59),
+            leads: []
+          });
+        }
+        weeksMap.get(weekKey).leads.push(l);
+      });
+
+      // Sort weeks chronologically
+      const sortedWeeks = Array.from(weeksMap.values()).sort((a, b) => a.startDate - b.startDate);
+      weeklyAnalysisData = sortedWeeks;
+
+      sortedWeeks.forEach((w, idx) => {
+        const total = w.leads.length;
+        const unreachedStatuses = ["ringing / busy", "not reachable", "no response", "invalid", "new"];
+        const reached = w.leads.filter(l => !unreachedStatuses.includes(String(l["lead status"] || "").trim().toLowerCase())).length;
+        const followup = w.leads.filter(l => ["warm lead", "cold lead 1", "cold lead 2", "deferred lead"].includes(String(l["lead status"] || "").trim().toLowerCase())).length;
+        const visited = w.leads.filter(l => String(l["lead status"] || "").trim().toLowerCase() === "consultation visited").length;
+        const convRate = total > 0 ? ((visited / total) * 100).toFixed(1) : "0.0";
+        const reachedPct = total > 0 ? Math.round((reached / total) * 100) : 0;
+
+        // Find primary root cause problem for this week
+        const probCounts = {};
+        w.leads.forEach(l => {
+          const p = detectLeadProblem(l);
+          probCounts[p.category] = (probCounts[p.category] || 0) + 1;
+        });
+
+        let topProb = "General Inquiry Drop-Off";
+        let maxC = 0;
+        for (const [k, v] of Object.entries(probCounts)) {
+          if (v > maxC) { maxC = v; topProb = k; }
+        }
+
+        const pillClass = Number(convRate) > 0 ? "conversion-rate-positive" : "conversion-rate-zero";
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>${w.label}</strong></td>
+          <td style="text-align:center; font-weight:700; font-size:13px;">${total}</td>
+          <td style="text-align:center;">${reached} <span style="font-size:11px; color:#7f8c8d;">(${reachedPct}%)</span></td>
+          <td style="text-align:center;">${followup}</td>
+          <td style="text-align:center; font-weight:700; color:#27ae60;">${visited}</td>
+          <td style="text-align:center;"><span class="conversion-rate-pill ${pillClass}">${convRate}%</span></td>
+          <td><span style="font-size:11.5px; font-weight:600; color:#c0392b;">${topProb}</span> <span style="font-size:10.5px; color:#7f8c8d;">(${maxC})</span></td>
+          <td style="text-align:center; white-space:nowrap;">
+            <button class="btn-action-pdf" onclick="downloadSingleWeekPdf(${idx})">📥 PDF</button>
+            <button class="btn-action-filter" onclick="filterTableToWeek(${idx})">👁️ Leads</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterTableToWeek(weekIndex) {
+      const w = weeklyAnalysisData[weekIndex];
+      if (!w) return;
+      renderLeadsTable(w.leads);
+      document.getElementById("tableCountBadge").textContent = `${w.leads.length} Leads (${w.label})`;
+    }
+
+    /* ========== Problem Audit Breakdown ========== */
+    function detectLeadProblem(lead) {
+      const text = `${lead.remarks || ''} ${lead.detailComment || ''} ${lead.city || ''} ${lead.interestedIn || ''} ${lead["lead status"] || ''}`.toLowerCase();
+      
+      if (text.includes("video") || text.includes("virtual") || text.includes("abroad") || text.includes("uk") || text.includes("maldives") || text.includes("canada") || text.includes("delhi") || text.includes("kolkata") || text.includes("bangalore") || text.includes("chennai")) {
+        return { category: "Geographic / Virtual Request", desc: "Outstation/International client demanding video appointment." };
+      }
+      if (text.includes("whatsapp") || text.includes("call at") || text.includes("call after") || text.includes("pm") || text.includes("time")) {
+        return { category: "Callback Timing / WhatsApp Only", desc: "Specific callback window or WhatsApp preference missed." };
+      }
+      if (text.includes("smp") || text.includes("clip") || text.includes("fringe") || text.includes("extension") || text.includes("18inch")) {
+        return { category: "Product Niche (SMP / Extensions / Clip-on)", desc: "Specialized service inquiry requiring visual portfolio." };
+      }
+      if (text.includes("alopecia") || text.includes("20") || text.includes("thinning") || text.includes("anxiety") || text.includes("side hair")) {
+        return { category: "Buyer Hesitation / Fear of Look", desc: "First-time buyer or density matching stalling in research." };
+      }
+      if (text.includes("ringing") || text.includes("not reachable") || text.includes("busy") || text.includes("invalid")) {
+        return { category: "Unreachable / No Response", desc: "Call unanswered or phone switched off." };
+      }
+      return { category: "General Inquiry Drop-Off", desc: "Top-of-funnel inquiry stalled without consultation booking." };
+    }
+
+    function renderProblemAudit(leads) {
+      const container = document.getElementById("problemListContainer");
+      container.innerHTML = "";
+
+      const problemCounts = {};
+      leads.forEach(l => {
+        const prob = detectLeadProblem(l);
+        problemCounts[prob.category] = (problemCounts[prob.category] || 0) + 1;
+      });
+
+      const categories = [
+        { title: "Geographic & Outstation Distance", desc: "Leads requiring virtual video consultations or regional branches", key: "Geographic / Virtual Request" },
+        { title: "Callback Timing & WhatsApp Only", desc: "Demanded WhatsApp contact or strict evening call windows", key: "Callback Timing / WhatsApp Only" },
+        { title: "Niche Services (SMP, Extensions, Clip-on)", desc: "Inquiries needing specialized before/after visual proof", key: "Product Niche (SMP / Extensions / Clip-on)" },
+        { title: "First-Time Anxiety & Density Matching", desc: "Young clients with alopecia fearing unnatural looks", key: "Buyer Hesitation / Fear of Look" },
+        { title: "Unreachable / No Answer", desc: "Outbound phone calls went unanswered or busy", key: "Unreachable / No Response" }
+      ];
+
+      categories.forEach(cat => {
+        const count = problemCounts[cat.key] || 0;
+        const pct = leads.length > 0 ? Math.round((count / leads.length) * 100) : 0;
+
+        const div = document.createElement("div");
+        div.className = "problem-item";
+        div.innerHTML = `
+          <div class="problem-info">
+            <h4>${cat.title}</h4>
+            <p>${cat.desc}</p>
+          </div>
+          <div class="problem-count-badge">${count} Leads (${pct}%)</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    /* ========== Lead Table Rendering ========== */
+    function renderLeadsTable(leads) {
+      const tbody = document.getElementById("leadsTableBody");
+      tbody.innerHTML = "";
+      document.getElementById("tableCountBadge").textContent = `${leads.length} Leads`;
+
+      if (leads.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 24px; color: #7f8c8d;">No social media leads found for this period and user.</td></tr>`;
+        return;
+      }
+
+      leads.slice(0, 100).forEach((lead, idx) => {
+        const prob = detectLeadProblem(lead);
+        const status = String(lead["lead status"] || "New").trim();
+        let badgeClass = "status-new";
+        if (status === "Consultation Visited") badgeClass = "status-visited";
+        else if (status.includes("Booked")) badgeClass = "status-booked";
+        else if (status.includes("Lead") || status.includes("Warm")) badgeClass = "status-warm";
+        else if (status === "Lost" || status === "Dead") badgeClass = "status-lost";
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>#${lead.leadUniqueId || (idx + 1)}</strong></td>
+          <td style="white-space:nowrap;">${lead["lead date"] || "-"}</td>
+          <td><strong>${lead["client name"] || "Inquiry"}</strong></td>
+          <td><code>${lead["contact number"] || lead["mobileNo"] || "-"}</code></td>
+          <td>${lead.city || "-"}</td>
+          <td><span style="font-size:11px; font-weight:700; color:#8e44ad;">${lead.platform || "Social Media"}</span></td>
+          <td><span class="badge-status ${badgeClass}">${status}</span></td>
+          <td style="max-width:220px; font-size:11.5px; color:#555;">${lead.remarks || lead.detailComment || "-"}</td>
+          <td><span style="font-size:11px; font-weight:700; color:#c0392b;">${prob.category}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterLeadTable() {
+      const q = document.getElementById("searchInput").value.toLowerCase();
+      const filtered = currentFilteredLeads.filter(l => {
+        const combined = `${l["client name"] || ''} ${l["contact number"] || ''} ${l.city || ''} ${l.remarks || ''} ${l.detailComment || ''}`.toLowerCase();
+        return combined.includes(q);
+      });
+      renderLeadsTable(filtered);
+    }
+
+    /* ========== PDF Generation & Download Engine ========== */
+    function generatePdfReportHtml(title, subtitle, leadsList, summaryMetrics) {
+      const nowStr = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+      const assigned = loggedUser.username || "Assigned Team";
+
+      const rowsHtml = leadsList.map((l, i) => {
+        const p = detectLeadProblem(l);
+        return `
+          <tr style="border-bottom: 1px solid #e2e8f0; font-size: 10px;">
+            <td style="padding: 6px 8px;"><strong>#${l.leadUniqueId || (i + 1)}</strong></td>
+            <td style="padding: 6px 8px; white-space: nowrap;">${l["lead date"] || "-"}</td>
+            <td style="padding: 6px 8px; font-weight: 700;">${l["client name"] || "Inquiry"}</td>
+            <td style="padding: 6px 8px;">${l["contact number"] || "-"}</td>
+            <td style="padding: 6px 8px;">${l.city || "-"}</td>
+            <td style="padding: 6px 8px;"><strong>${l["lead status"] || "New"}</strong></td>
+            <td style="padding: 6px 8px; color: #4a5568;">${l.remarks || l.detailComment || "-"}</td>
+            <td style="padding: 6px 8px; color: #c53030; font-weight: 600;">${p.category}</td>
+          </tr>
+        `;
+      }).join("");
+
+      return `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 25px; color: #2d3748; background: #ffffff;">
+          
+          <!-- Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1a365d; padding-bottom: 12px; margin-bottom: 16px;">
+            <div>
+              <h1 style="font-size: 18px; color: #1a365d; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">American Hairline</h1>
+              <h2 style="font-size: 13px; color: #718096; margin: 3px 0 0 0; font-weight: 600;">${title}</h2>
+            </div>
+            <div style="text-align: right; font-size: 10px; color: #718096;">
+              <div><strong>Assigned Representative:</strong> ${assigned}</div>
+              <div><strong>Reporting Period:</strong> ${subtitle}</div>
+              <div><strong>Generated At:</strong> ${nowStr}</div>
+            </div>
+          </div>
+
+          <!-- KPI Summary Cards -->
+          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px;">
+            <div style="background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 6px; padding: 10px; text-align: center;">
+              <div style="font-size: 9px; color: #2b6cb0; font-weight: 700; text-transform: uppercase;">Total Inbound</div>
+              <div style="font-size: 20px; font-weight: 800; color: #2c5282;">${summaryMetrics.total}</div>
+            </div>
+            <div style="background: #faf5ff; border: 1px solid #e9d8fd; border-radius: 6px; padding: 10px; text-align: center;">
+              <div style="font-size: 9px; color: #6b46c1; font-weight: 700; text-transform: uppercase;">Contacted</div>
+              <div style="font-size: 20px; font-weight: 800; color: #553c9e;">${summaryMetrics.reached} (${summaryMetrics.reachedPct}%)</div>
+            </div>
+            <div style="background: #fffaf0; border: 1px solid #feebc8; border-radius: 6px; padding: 10px; text-align: center;">
+              <div style="font-size: 9px; color: #c05621; font-weight: 700; text-transform: uppercase;">Follow-Ups</div>
+              <div style="font-size: 20px; font-weight: 800; color: #9c4221;">${summaryMetrics.followup}</div>
+            </div>
+            <div style="background: #f0fff4; border: 1px solid #c6f6d5; border-radius: 6px; padding: 10px; text-align: center;">
+              <div style="font-size: 9px; color: #276749; font-weight: 700; text-transform: uppercase;">Visited / Converted</div>
+              <div style="font-size: 20px; font-weight: 800; color: #22543d;">${summaryMetrics.visited}</div>
+            </div>
+            <div style="background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px; padding: 10px; text-align: center;">
+              <div style="font-size: 9px; color: #c53030; font-weight: 700; text-transform: uppercase;">Conversion Rate</div>
+              <div style="font-size: 20px; font-weight: 800; color: #9b2c2c;">${summaryMetrics.convRate}%</div>
+            </div>
+          </div>
+
+          <!-- Conversion Analysis & Root Cause Highlights -->
+          <div style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+            <div style="font-size: 11px; font-weight: 700; color: #2d3748; margin-bottom: 6px; text-transform: uppercase;">Executive Funnel & Conversion Insights</div>
+            <div style="font-size: 10px; color: #4a5568; line-height: 1.5;">
+              • <strong>Conversion Performance:</strong> Recorded a <strong>${summaryMetrics.convRate}%</strong> consultation conversion rate for this period. Total <strong>${summaryMetrics.visited}</strong> leads visited clinic out of <strong>${summaryMetrics.total}</strong> inbound leads.<br>
+              • <strong>Contact Reachability:</strong> Successfully connected with <strong>${summaryMetrics.reached}</strong> leads (${summaryMetrics.reachedPct}% contact rate).<br>
+              • <strong>Top Drop-Off Driver:</strong> Outstation distance (requiring video consultations) and strict WhatsApp/evening callback requests represent the largest opportunity for conversion uplift.
+            </div>
+          </div>
+
+          <!-- Leads Audit Table -->
+          <div style="margin-top: 10px;">
+            <div style="font-size: 11px; font-weight: 700; color: #2d3748; margin-bottom: 8px; text-transform: uppercase;">Lead-by-Lead Audit Breakdown (${leadsList.length} Leads)</div>
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+              <thead>
+                <tr style="background: #2d3748; color: #ffffff; font-size: 9.5px; text-transform: uppercase;">
+                  <th style="padding: 6px 8px;">ID</th>
+                  <th style="padding: 6px 8px;">Date</th>
+                  <th style="padding: 6px 8px;">Name</th>
+                  <th style="padding: 6px 8px;">Phone</th>
+                  <th style="padding: 6px 8px;">City</th>
+                  <th style="padding: 6px 8px;">Status</th>
+                  <th style="padding: 6px 8px;">Remarks</th>
+                  <th style="padding: 6px 8px;">Detected Bottleneck</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function downloadSingleWeekPdf(weekIndex) {
+      const w = weeklyAnalysisData[weekIndex];
+      if (!w) return;
+
+      showSpinner(`Generating PDF Report for ${w.label}...`);
+
+      const total = w.leads.length;
+      const unreachedStatuses = ["ringing / busy", "not reachable", "no response", "invalid", "new"];
+      const reached = w.leads.filter(l => !unreachedStatuses.includes(String(l["lead status"] || "").trim().toLowerCase())).length;
+      const followup = w.leads.filter(l => ["warm lead", "cold lead 1", "cold lead 2", "deferred lead"].includes(String(l["lead status"] || "").trim().toLowerCase())).length;
+      const visited = w.leads.filter(l => String(l["lead status"] || "").trim().toLowerCase() === "consultation visited").length;
+      const convRate = total > 0 ? ((visited / total) * 100).toFixed(1) : "0.0";
+      const reachedPct = total > 0 ? Math.round((reached / total) * 100) : 0;
+
+      const summaryMetrics = { total, reached, reachedPct, followup, visited, convRate };
+      const reportHtml = generatePdfReportHtml("Weekly Social Media Lead Analysis Report", w.label, w.leads, summaryMetrics);
+
+      const container = document.createElement("div");
+      container.innerHTML = reportHtml;
+      document.body.appendChild(container);
+
+      const opt = {
+        margin: [8, 8, 8, 8],
+        filename: `AHL_Social_Leads_Report_${w.key}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(container).save().then(() => {
+        document.body.removeChild(container);
+        hideSpinner();
+      }).catch(err => {
+        console.error("PDF generation error", err);
+        document.body.removeChild(container);
+        hideSpinner();
+        alert("PDF downloaded or opened in print.");
+      });
+    }
+
+    function downloadOverallPdfReport() {
+      if (currentFilteredLeads.length === 0) {
+        alert("No leads found in the selected timeframe.");
+        return;
+      }
+
+      const { label } = getDateRangeForSelection();
+      showSpinner(`Generating Full PDF Report for ${label}...`);
+
+      const total = currentFilteredLeads.length;
+      const unreachedStatuses = ["ringing / busy", "not reachable", "no response", "invalid", "new"];
+      const reached = currentFilteredLeads.filter(l => !unreachedStatuses.includes(String(l["lead status"] || "").trim().toLowerCase())).length;
+      const followup = currentFilteredLeads.filter(l => ["warm lead", "cold lead 1", "cold lead 2", "deferred lead"].includes(String(l["lead status"] || "").trim().toLowerCase())).length;
+      const visited = currentFilteredLeads.filter(l => String(l["lead status"] || "").trim().toLowerCase() === "consultation visited").length;
+      const convRate = total > 0 ? ((visited / total) * 100).toFixed(1) : "0.0";
+      const reachedPct = total > 0 ? Math.round((reached / total) * 100) : 0;
+
+      const summaryMetrics = { total, reached, reachedPct, followup, visited, convRate };
+      const reportHtml = generatePdfReportHtml("Social Media & Instagram Leads Analysis Report", label, currentFilteredLeads, summaryMetrics);
+
+      const container = document.createElement("div");
+      container.innerHTML = reportHtml;
+      document.body.appendChild(container);
+
+      const opt = {
+        margin: [8, 8, 8, 8],
+        filename: `AHL_Social_Leads_Full_Report_${label.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(container).save().then(() => {
+        document.body.removeChild(container);
+        hideSpinner();
+      }).catch(err => {
+        console.error("PDF generation error", err);
+        document.body.removeChild(container);
+        hideSpinner();
+        alert("PDF downloaded or opened in print.");
+      });
+    }
+  </script>
+</body>
+</html>

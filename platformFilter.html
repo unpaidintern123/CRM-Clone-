@@ -1,0 +1,174 @@
+<script>
+/**
+ * Shared Platform filter utility.
+ *
+ * One canonical Platform category per lead, resolved at filter time only.
+ * Stored Platform values (Leads Data column H) are never read-modified, and no
+ * lead object is mutated. This file says nothing about Paid/Organic — Platform
+ * is "where the lead entered from", nothing more.
+ *
+ * Loaded by: Home.html, crmDashboard.html, personDashboard.html,
+ *            dashboard.html, socialDashboard.html
+ * Must be included BEFORE any script that calls these functions.
+ */
+(function () {
+  "use strict";
+
+  // Already loaded (a shell including it twice) — keep the first definition.
+  if (window.canonicalPlatform && window.matchesPlatform) return;
+
+  /**
+   * The canonical category list. Single source of truth.
+   * "All" is not a category; it is the empty filter value.
+   */
+  var PLATFORM_CATEGORIES = [
+    "Incoming",
+    "Website",
+    "Flexi Funnel",
+    "Instagram",
+    "Social Media",
+    "Gallabox",
+    "Whatsapp Ads",
+    "Ebook",
+    "Referral",
+    "Manual Sheet Entry",
+    "Miscall",
+    "Unmapped"
+  ];
+
+  /**
+   * Categories that also appear as a compound value, e.g. "Website (Contact Us)",
+   * "Instagram (Reels)", "Flexi Funnel (stick-on-hair-system)".
+   * Matched as an exact name, or the name immediately followed by "(".
+   * This deliberately rejects unrelated values like "website-malicious".
+   */
+  var COMPOUND_CATEGORIES = ["Flexi Funnel", "Website", "Instagram"];
+
+  /** Exact-match-only categories. */
+  var EXACT_CATEGORIES = [
+    "Social Media",
+    "Gallabox",
+    "Whatsapp Ads",
+    "Ebook",
+    "Referral",
+    "Manual Sheet Entry",
+    "Incoming",
+    "Miscall"
+  ];
+
+  /**
+   * Resolve any stored Platform value to exactly one canonical category.
+   * Null-safe, trimmed, case-insensitive. Pure function — no side effects.
+   *
+   * "Flexi Funnel (stick-on-hair-system)"     -> "Flexi Funnel"
+   * "Flexi Funnel (tick-on-hair-system)"      -> "Flexi Funnel"  (corrupt slug)
+   * "Flexi Funnel (lp/stick-on-hair-system)"  -> "Flexi Funnel"  (lp/ prefix)
+   * "Website (Contact Us)"                    -> "Website"
+   * "Instagram (Reels)"                       -> "Instagram"
+   * "Social Media"                            -> "Social Media"
+   * "", null, undefined, "website-malicious"  -> "Unmapped"
+   */
+  function canonicalPlatform(raw) {
+    var v = (raw === null || raw === undefined) ? "" : String(raw).trim();
+    if (v === "") return "Unmapped";
+    var l = v.toLowerCase();
+
+    var i, name;
+    for (i = 0; i < COMPOUND_CATEGORIES.length; i++) {
+      name = COMPOUND_CATEGORIES[i].toLowerCase();
+      if (l === name) return COMPOUND_CATEGORIES[i];
+      if (l.indexOf(name + " (") === 0 || l.indexOf(name + "(") === 0) {
+        return COMPOUND_CATEGORIES[i];
+      }
+    }
+    for (i = 0; i < EXACT_CATEGORIES.length; i++) {
+      if (l === EXACT_CATEGORIES[i].toLowerCase()) return EXACT_CATEGORIES[i];
+    }
+    return "Unmapped";
+  }
+
+  /**
+   * Is this a category a caller is allowed to filter by?
+   * Case-insensitive lookup against the canonical list.
+   */
+  function isKnownCategory(value) {
+    var l = String(value === null || value === undefined ? "" : value).trim().toLowerCase();
+    for (var i = 0; i < PLATFORM_CATEGORIES.length; i++) {
+      if (PLATFORM_CATEGORIES[i].toLowerCase() === l) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Does a lead's stored Platform belong to the selected filter category?
+   *
+   * An empty/blank selection means "All" and passes everything the caller is
+   * already permitted to see — it never widens access on its own.
+   *
+   * A selection that is not one of the 12 canonical categories matches NOTHING.
+   * Without this guard an unknown selection would canonicalise to "Unmapped" and
+   * silently return every blank-Platform lead. "Unmapped" itself stays selectable.
+   *
+   * The selected value is matched case-insensitively, so callers may pass
+   * "Flexi Funnel", "flexi funnel" or "  FLEXI FUNNEL  " interchangeably.
+   */
+  function matchesPlatform(raw, selected) {
+    var sel = (selected === null || selected === undefined) ? "" : String(selected).trim();
+    if (sel === "") return true;
+    if (!isKnownCategory(sel)) return false;
+    return canonicalPlatform(raw) === canonicalPlatform(sel);
+  }
+
+  /**
+   * Build the shared <option> markup. Dashboards keep their own "All" label
+   * ("All" vs "All Platforms"), so it is passed in.
+   */
+  function platformOptionsHtml(allLabel) {
+    var html = '<option value="">' + (allLabel || "All") + "</option>";
+    for (var i = 0; i < PLATFORM_CATEGORIES.length; i++) {
+      html += '<option value="' + PLATFORM_CATEGORIES[i] + '">' +
+              PLATFORM_CATEGORIES[i] + "</option>";
+    }
+    return html;
+  }
+
+  /**
+   * Dev aid: warn in the console if a dropdown has drifted from the shared list.
+   * Read-only — it never rewrites the DOM.
+   */
+  function verifyPlatformOptions(selectId) {
+    try {
+      var el = document.getElementById(selectId);
+      if (!el) return;
+      var have = [], j;
+      for (j = 0; j < el.options.length; j++) {
+        if (el.options[j].value !== "") have.push(el.options[j].value);
+      }
+      var missing = PLATFORM_CATEGORIES.filter(function (c) { return have.indexOf(c) === -1; });
+      var extra = have.filter(function (c) { return PLATFORM_CATEGORIES.indexOf(c) === -1; });
+      if (missing.length || extra.length) {
+        console.warn("[platformFilter] #" + selectId + " differs from shared list.",
+                     { missing: missing, extra: extra });
+      }
+    } catch (err) {
+      /* never break a dashboard over a console check */
+    }
+  }
+
+  window.PLATFORM_CATEGORIES = PLATFORM_CATEGORIES.slice();
+  window.canonicalPlatform = canonicalPlatform;
+  window.matchesPlatform = matchesPlatform;
+  window.platformOptionsHtml = platformOptionsHtml;
+  window.verifyPlatformOptions = verifyPlatformOptions;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+      verifyPlatformOptions("platformFilter");
+      verifyPlatformOptions("leadPlatform");
+    });
+  } else {
+    verifyPlatformOptions("platformFilter");
+    verifyPlatformOptions("leadPlatform");
+  }
+})();
+</script>

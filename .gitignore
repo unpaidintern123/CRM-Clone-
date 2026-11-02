@@ -1,0 +1,11 @@
+.DS_Store
+*.log
+*.env*
+.env*
+ahl-crm-database-*.json
+*-adminsdk-*.json
+*firebase-adminsdk*.json
+service-account*.json
+credentials*.json
+*.key
+*.pem
