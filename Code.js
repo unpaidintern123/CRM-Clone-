@@ -40,6 +40,8 @@ function onOpen() {
     .addSeparator()
     .addItem("⚡ Sync Selected Row(s) to Firebase", "menuSyncSelectedRowsToFirebase")
     .addSeparator()
+    .addItem("👥 Sync Users to Firebase", "menuSyncUsersToFirebase")
+    .addSeparator()
     .addItem("Run Consultation Visited Sync", "menuRunConsultationVisitedSync")
     .addToUi();
 }
@@ -265,6 +267,190 @@ function menuSyncSelectedRowsToFirebase() {
   } else if (successCount === 0) {
     ui.alert("No valid leads found in the selected rows to update.");
   }
+}
+
+/**
+ * Syncs the entire "Users" sheet tab to Firebase Firestore.
+ * Updates user records (roles, status, passwords, email, next monday, lead flow)
+ * and syncs active assignees to config/leadAssignment for round-robin lead distribution.
+ *
+ * Can be clicked via:
+ * 1. Sheet Menu: CRM Admin -> 👥 Sync Users to Firebase
+ * 2. Clickable Drawing / Button on Users tab (Assign script: menuSyncUsersToFirebase or syncUsersToFirebase)
+ */
+function menuSyncUsersToFirebase() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ui = SpreadsheetApp.getUi();
+
+  try {
+    if (ss) ss.toast("⏳ Reading 'Users' tab and preparing Firebase sync...", "CRM Admin", 5);
+
+    let sheet = ss ? ss.getSheetByName("Users") : null;
+    if (!sheet) {
+      try {
+        sheet = SpreadsheetApp.openById("1fiqGa4nRkSkun-nffI_QVtFQG4o4ubJGXkMIcEprI1k").getSheetByName("Users");
+      } catch (err) {
+        Logger.log("Could not open spreadsheet by ID: " + err);
+      }
+    }
+
+    if (!sheet) {
+      ui.alert("⚠️ Could not find the 'Users' sheet tab in this spreadsheet.");
+      return;
+    }
+
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow < 2) {
+      ui.alert("⚠️ The 'Users' sheet does not contain any data rows (Row 2 onwards).");
+      return;
+    }
+
+    const allData = sheet.getRange(1, 1, lastRow, Math.max(lastCol, 7)).getValues();
+    const rawHeaders = allData[0] || [];
+    const headers = rawHeaders.map(function(h) {
+      return String(h || "").trim().toLowerCase();
+    });
+
+    // Helper to find column index with keyword fallback
+    function findCol(keywords, defaultIdx) {
+      for (let k = 0; k < keywords.length; k++) {
+        const kw = keywords[k].toLowerCase();
+        for (let c = 0; c < headers.length; c++) {
+          if (headers[c].indexOf(kw) !== -1) return c;
+        }
+      }
+      return defaultIdx;
+    }
+
+    const usernameCol = findCol(["username", "user", "name"], 0);
+    const passwordCol = findCol(["password", "pass"], 1);
+    const permissionCol = findCol(["permission", "role", "designation"], 2);
+    const statusCol = findCol(["status", "state"], 3);
+    const mondayCol = findCol(["next monday", "monday"], 4);
+    const leadFlowCol = findCol(["lead flow", "leadflow", "flow"], 5);
+    const emailCol = findCol(["email id", "email", "mail"], 6);
+
+    const users = [];
+    const activeAssignees = [];
+    const mondayEligibleAssignees = [];
+    const allUsersStatus = [];
+
+    for (let i = 1; i < allData.length; i++) {
+      const row = allData[i];
+      const username = String(row[usernameCol] || "").trim();
+      if (!username) continue;
+
+      const plainPassword = String(row[passwordCol] || "").trim();
+      let permission = String(row[permissionCol] || "").trim() || "CRM Executive";
+      if (permission.indexOf("@") !== -1 || (plainPassword && permission === plainPassword)) {
+        permission = "CRM Executive";
+      }
+
+      const status = String(row[statusCol] || "").trim() || "Inactive";
+      const nextMonday = String(row[mondayCol] || "").trim();
+      const leadFlow = row[leadFlowCol] !== undefined ? String(row[leadFlowCol]).trim() : "";
+      const email = String(row[emailCol] || "").trim();
+
+      const userObj = {
+        username: username,
+        password: plainPassword,
+        permission: permission,
+        status: status,
+        nextMonday: nextMonday,
+        leadFlow: leadFlow,
+        email: email
+      };
+
+      users.push(userObj);
+      allUsersStatus.push({ username: username, status: status });
+
+      if (status.toLowerCase() === "active") {
+        if (activeAssignees.indexOf(username) === -1) {
+          activeAssignees.push(username);
+        }
+        if (nextMonday.toLowerCase() === "coming") {
+          if (mondayEligibleAssignees.indexOf(username) === -1) {
+            mondayEligibleAssignees.push(username);
+          }
+        }
+      }
+    }
+
+    if (users.length === 0) {
+      ui.alert("⚠️ No valid users found in the 'Users' sheet tab.");
+      return;
+    }
+
+    let actor = "sheet_button";
+    try {
+      const currentEmail = Session.getActiveUser().getEmail();
+      if (currentEmail) actor = currentEmail;
+    } catch (e) {
+      // ignore
+    }
+
+    const payload = {
+      activeAssignees: activeAssignees,
+      mondayEligibleAssignees: mondayEligibleAssignees,
+      allUsersStatus: allUsersStatus,
+      users: users,
+      usersSnapshot: users,
+      source: "google_sheet_users_button",
+      syncedBy: actor
+    };
+
+    if (ss) ss.toast("⚡ Syncing " + users.length + " user(s) to Firebase...", "CRM Admin", 10);
+
+    let response;
+    try {
+      response = crmApiProxy("/admin/sync-users", "POST", JSON.stringify(payload));
+    } catch (apiErr) {
+      Logger.log("/admin/sync-users error, trying /admin/sync-assignees fallback: " + apiErr);
+      response = crmApiProxy("/admin/sync-assignees", "POST", JSON.stringify(payload));
+    }
+
+    if (ss) {
+      ss.toast(
+        "✅ " + users.length + " user(s) successfully synced to Firebase!",
+        "CRM Admin",
+        6
+      );
+    }
+
+    const activeListStr = activeAssignees.length ? activeAssignees.join(", ") : "(None)";
+    const mondayListStr = mondayEligibleAssignees.length ? mondayEligibleAssignees.join(", ") : "(None)";
+
+    ui.alert(
+      "👥 Users Synced Successfully",
+      "✅ The 'Users' sheet tab has been synced to Firebase!\n\n" +
+      "• Total Users Processed: " + users.length + "\n" +
+      "• Active Assignees (" + activeAssignees.length + "): " + activeListStr + "\n" +
+      "• Monday Eligible (" + mondayEligibleAssignees.length + "): " + mondayListStr + "\n\n" +
+      "Firebase Firestore 'users' documents (status, permissions, password hashes, email, next monday, lead flow) and round-robin lead assignment pool have been updated.",
+      ui.ButtonSet.OK
+    );
+
+    Logger.log("menuSyncUsersToFirebase success: " + JSON.stringify(response));
+    return response;
+  } catch (err) {
+    const errorMsg = String(err && err.message ? err.message : err);
+    Logger.log("menuSyncUsersToFirebase error: " + errorMsg);
+    ui.alert(
+      "❌ User Sync Failed",
+      "Failed to sync users to Firebase:\n\n" + errorMsg +
+      "\n\nPlease ensure Script Properties CRM_API_BASE_URL and CRM_API_TOKEN are configured.",
+      ui.ButtonSet.OK
+    );
+    throw err;
+  }
+}
+
+/**
+ * Assignable function alias for sheets button/drawing.
+ */
+function syncUsersToFirebase() {
+  return menuSyncUsersToFirebase();
 }
 
 /**
@@ -1039,25 +1225,82 @@ function consultationLog(lead) {
 }
 
 function syncAssignmentUsersToFirestoreConfig() {
-  const sheet = SpreadsheetApp.openById("1fiqGa4nRkSkun-nffI_QVtFQG4o4ubJGXkMIcEprI1k").getSheetByName("Users");
+  let sheet = SpreadsheetApp.getActiveSpreadsheet() ? SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Users") : null;
+  if (!sheet) {
+    try {
+      sheet = SpreadsheetApp.openById("1fiqGa4nRkSkun-nffI_QVtFQG4o4ubJGXkMIcEprI1k").getSheetByName("Users");
+    } catch (err) {
+      Logger.log("syncAssignmentUsersToFirestoreConfig error opening sheet: " + err);
+    }
+  }
   if (!sheet) throw new Error("Users sheet not found.");
 
-  const userData = sheet.getDataRange().getValues();
+  const allData = sheet.getDataRange().getValues();
+  if (allData.length < 2) return { success: false, message: "No data" };
+
+  const rawHeaders = allData[0] || [];
+  const headers = rawHeaders.map(function(h) {
+    return String(h || "").trim().toLowerCase();
+  });
+
+  function findCol(keywords, defaultIdx) {
+    for (let k = 0; k < keywords.length; k++) {
+      const kw = keywords[k].toLowerCase();
+      for (let c = 0; c < headers.length; c++) {
+        if (headers[c].indexOf(kw) !== -1) return c;
+      }
+    }
+    return defaultIdx;
+  }
+
+  const usernameCol = findCol(["username", "user", "name"], 0);
+  const passwordCol = findCol(["password", "pass"], 1);
+  const permissionCol = findCol(["permission", "role", "designation"], 2);
+  const statusCol = findCol(["status", "state"], 3);
+  const mondayCol = findCol(["next monday", "monday"], 4);
+  const leadFlowCol = findCol(["lead flow", "leadflow", "flow"], 5);
+  const emailCol = findCol(["email id", "email", "mail"], 6);
+
+  const users = [];
   const activeAssignees = [];
   const mondayEligibleAssignees = [];
   const allUsersStatus = [];
 
-  for (let i = 1; i < userData.length; i++) {
-    const row = userData[i];
-    const username = String(row[0] || "").trim();
-    const status = String(row[3] || "").trim();
-    const nextMonday = String(row[4] || "").trim();
+  for (let i = 1; i < allData.length; i++) {
+    const row = allData[i];
+    const username = String(row[usernameCol] || "").trim();
+    if (!username) continue;
 
-    if (username) {
-      allUsersStatus.push({ username, status });
-      if (status === "Active") {
+    const plainPassword = String(row[passwordCol] || "").trim();
+    let permission = String(row[permissionCol] || "").trim() || "CRM Executive";
+    if (permission.indexOf("@") !== -1 || (plainPassword && permission === plainPassword)) {
+      permission = "CRM Executive";
+    }
+
+    const status = String(row[statusCol] || "").trim() || "Inactive";
+    const nextMonday = String(row[mondayCol] || "").trim();
+    const leadFlow = row[leadFlowCol] !== undefined ? String(row[leadFlowCol]).trim() : "";
+    const email = String(row[emailCol] || "").trim();
+
+    const userObj = {
+      username: username,
+      password: plainPassword,
+      permission: permission,
+      status: status,
+      nextMonday: nextMonday,
+      leadFlow: leadFlow,
+      email: email
+    };
+
+    users.push(userObj);
+    allUsersStatus.push({ username: username, status: status });
+
+    if (status.toLowerCase() === "active") {
+      if (activeAssignees.indexOf(username) === -1) {
         activeAssignees.push(username);
-        if (nextMonday === "Coming") {
+      }
+      if (nextMonday.toLowerCase() === "coming") {
+        if (mondayEligibleAssignees.indexOf(username) === -1) {
           mondayEligibleAssignees.push(username);
         }
       }
@@ -1067,10 +1310,19 @@ function syncAssignmentUsersToFirestoreConfig() {
   const payload = {
     activeAssignees: activeAssignees,
     mondayEligibleAssignees: mondayEligibleAssignees,
-    allUsersStatus: allUsersStatus
+    allUsersStatus: allUsersStatus,
+    users: users,
+    usersSnapshot: users,
+    source: "sheet_onedit_users_sync",
+    syncedBy: "sheet_trigger"
   };
 
-  return crmApiProxy("/admin/sync-assignees", "POST", JSON.stringify(payload));
+  try {
+    return crmApiProxy("/admin/sync-users", "POST", JSON.stringify(payload));
+  } catch (apiErr) {
+    Logger.log("syncAssignmentUsersToFirestoreConfig fallback: " + apiErr);
+    return crmApiProxy("/admin/sync-assignees", "POST", JSON.stringify(payload));
+  }
 }
 
 /**
@@ -1498,6 +1750,273 @@ function trackingAdChannel_(campaign, source) {
   return "";
 }
 
+/* ===================== Deferred attribution queue =========================
+ * The backend allocates a Lead ID synchronously but writes the Leads Data row
+ * asynchronously, so the immediate lookup in writeTrackingFields_ can miss.
+ * Values captured at import time are persisted verbatim and retried later; no
+ * attribution value is ever re-derived, so POP UP vs WhatsApp is preserved.
+ *
+ * Entry:    [idNumber, at, au, av, aw, ax, attempts, firstQueuedEpochSeconds]
+ * Recovery: same, plus a reason code at index 8.
+ *
+ * Concurrency - three phases, lock held only for short property work:
+ *   1. snapshot  (lock)    read the queue, mutate nothing
+ *   2. apply     (NO lock) slow Sheet lookups and writes
+ *   3. reconcile (lock)    re-read fresh, remove only ids this run resolved
+ *
+ * LIMITATIONS OF SCRIPT PROPERTIES (no multi-key transaction exists):
+ *  - The recovery write and the pending write are two separate operations.
+ *    They are ordered recovery-first, so an interruption between them leaves a
+ *    duplicate in recovery, never a lost record. Recovery de-duplicates by id.
+ *  - A read whose outcome is uncertain returns ok=false. Callers must then
+ *    persist nothing, because an empty array is indistinguishable from a wiped
+ *    queue. This is why every read returns a status rather than a bare array.
+ *  - Writes are verified by reading back; a store that silently drops writes
+ *    is therefore detected, but only within the same execution.
+ * ======================================================================= */
+var TRACKING_QUEUE_KEY_ = "TRACKING_PENDING_V1";
+var TRACKING_CORRUPT_KEY_ = "TRACKING_PENDING_CORRUPT";
+var TRACKING_RECOVERY_KEY_ = "TRACKING_RECOVERY_V1";
+var TRACKING_MAX_ATTEMPTS_ = 5;
+var TRACKING_MAX_ENTRIES_ = 60;
+var TRACKING_RECOVERY_MAX_ = 80;
+var TRACKING_MAX_BYTES_ = 8000;      // single property value limit is 9 KB
+var TRACKING_TTL_SECONDS_ = 172800;  // 48 h
+var TRACKING_LOCK_MS_ = 10000;
+
+function trackingIdText_(n) { return "Lead ID - " + n; }
+
+function trackingIdNumber_(leadId) {
+  var m = /^Lead ID - (\d+)$/.exec(String(leadId || "").trim());
+  return m ? parseInt(m[1], 10) : null;
+}
+
+function trackingNowSec_() { return Math.floor(Date.now() / 1000); }
+
+function trackingIsArray_(v) { return Object.prototype.toString.call(v) === "[object Array]"; }
+
+/** Schema gate. An entry that fails this is never acted on and never discarded. */
+function trackingEntryValid_(e) {
+  return trackingIsArray_(e) && e.length >= 8 &&
+         typeof e[0] === "number" && isFinite(e[0]) && e[0] >= 0 &&
+         typeof e[6] === "number" && isFinite(e[6]) &&
+         typeof e[7] === "number" && isFinite(e[7]);
+}
+
+function trackingWithLock_(fn) {
+  var lock = null;
+  try { lock = LockService.getScriptLock(); } catch (e) { return { ok: false, value: null }; }
+  var got = false;
+  try { got = lock.tryLock(TRACKING_LOCK_MS_); } catch (e) { got = false; }
+  if (!got) return { ok: false, value: null };
+  try { return { ok: true, value: fn() }; }
+  catch (e) { Logger.log("TRACKQUEUE locked-section-failed"); return { ok: false, value: null }; }
+  finally { try { lock.releaseLock(); } catch (e) { /* ignore */ } }
+}
+
+/**
+ * Reads a queue property. Returns { ok, queue }.
+ *   ok=true  queue is authoritative (possibly a genuinely empty [])
+ *   ok=false state is UNKNOWN - the caller must not persist anything
+ * A corrupt or schema-invalid value is quarantined before being cleared; if
+ * the quarantine write fails, the original is left in place and ok=false.
+ */
+function trackingReadKey_(key) {
+  var props;
+  try { props = PropertiesService.getScriptProperties(); }
+  catch (e) { Logger.log("TRACKQUEUE props-unavailable state-unknown key=" + key); return { ok: false, queue: [] }; }
+
+  var raw;
+  try { raw = props.getProperty(key); }
+  catch (e) { Logger.log("TRACKQUEUE read-failed state-unknown key=" + key); return { ok: false, queue: [] }; }
+
+  if (raw === null || raw === undefined || raw === "") return { ok: true, queue: [] };  // genuinely empty
+
+  var arr = null;
+  try { arr = JSON.parse(raw); } catch (e) { arr = null; }
+
+  var valid = [], invalid = 0;
+  if (trackingIsArray_(arr)) {
+    for (var i = 0; i < arr.length; i++) {
+      if (trackingEntryValid_(arr[i])) valid.push(arr[i]); else invalid++;
+    }
+    if (invalid === 0) return { ok: true, queue: valid };
+  }
+
+  // Something is wrong: quarantine the raw value before touching anything.
+  var quarantined = false;
+  try {
+    props.setProperty(TRACKING_CORRUPT_KEY_, String(raw).slice(0, 8500));
+    quarantined = props.getProperty(TRACKING_CORRUPT_KEY_) !== null;
+  } catch (e) { quarantined = false; }
+
+  if (!quarantined) {
+    Logger.log("TRACKQUEUE corrupt-NOT-quarantined key=" + key +
+      " original-left-intact state-unknown NEEDS-REVIEW");
+    return { ok: false, queue: [] };           // never clear what we could not copy
+  }
+  Logger.log("TRACKQUEUE corrupt-quarantined key=" + key + " invalidEntries=" + invalid +
+    " salvaged=" + valid.length + " copy=" + TRACKING_CORRUPT_KEY_);
+  return { ok: true, queue: valid };           // keep whatever parsed cleanly
+}
+
+function trackingPersistKey_(key, arr) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    if (!arr.length) { props.deleteProperty(key); return true; }
+    var json = JSON.stringify(arr);
+    if (json.length > TRACKING_MAX_BYTES_) {
+      Logger.log("TRACKQUEUE persist-refused oversize key=" + key + " bytes=" + json.length);
+      return false;      // never truncate: refusing is reported, trimming is silent
+    }
+    props.setProperty(key, json);
+    if (props.getProperty(key) !== json) { Logger.log("TRACKQUEUE persist-verify-failed key=" + key); return false; }
+    return true;
+  } catch (e) { Logger.log("TRACKQUEUE persist-threw key=" + key); return false; }
+}
+
+/**
+ * Appends entries to the bounded recovery store. Returns true only when every
+ * entry is durably stored, so the caller knows whether it may drop them from
+ * the pending queue. Call inside trackingWithLock_.
+ */
+function trackingRecoveryAdd_(entries) {
+  if (!entries.length) return true;
+  var r = trackingReadKey_(TRACKING_RECOVERY_KEY_);
+  if (!r.ok) { Logger.log("TRACKQUEUE recovery-read-failed keeping-in-pending"); return false; }
+  var rec = r.queue, have = {};
+  for (var i = 0; i < rec.length; i++) have[rec[i][0]] = 1;
+  var added = 0;
+  for (var j = 0; j < entries.length; j++) {
+    if (have[entries[j][0]]) continue;                       // idempotent on replay
+    if (rec.length >= TRACKING_RECOVERY_MAX_) {
+      Logger.log("TRACKQUEUE recovery-full max=" + TRACKING_RECOVERY_MAX_ +
+        " keeping-in-pending ids=" + entries.slice(j).map(function (x) { return x[0]; }).join(","));
+      return false;                                          // nothing is dropped
+    }
+    rec.push(entries[j]); have[entries[j][0]] = 1; added++;
+  }
+  if (!added) return true;
+  var stored = trackingPersistKey_(TRACKING_RECOVERY_KEY_, rec);
+  if (!stored) Logger.log("TRACKQUEUE recovery-persist-failed keeping-in-pending");
+  return stored;
+}
+
+/**
+ * Durably queues one lead. Persists immediately under the lock so a timeout or
+ * crash later in the run cannot lose it. Failures are reported with the Lead ID
+ * (an internal identifier, never customer data).
+ */
+function trackingEnqueue_(leadId, fields) {
+  var n = trackingIdNumber_(leadId);
+  if (n === null) return;
+  var f = fields || {};
+  var entry = [n, f.at || "", f.au || "", f.av || "", f.aw || "", f.ax || "", 0, trackingNowSec_()];
+
+  var res = trackingWithLock_(function () {
+    var r = trackingReadKey_(TRACKING_QUEUE_KEY_);
+    if (!r.ok) return "state-unknown";                       // never clobber
+    var q = r.queue;
+    for (var i = 0; i < q.length; i++) if (q[i][0] === n) return "duplicate";
+    if (q.length >= TRACKING_MAX_ENTRIES_) return "capacity";
+    q.push(entry);
+    return trackingPersistKey_(TRACKING_QUEUE_KEY_, q) ? "stored" : "persist-failed";
+  });
+
+  if (!res.ok)                             Logger.log("TRACKQUEUE enqueue-lock-unavailable id=" + n + " NEEDS-BACKFILL");
+  else if (res.value === "state-unknown")  Logger.log("TRACKQUEUE enqueue-skipped-unknown-state id=" + n + " NEEDS-BACKFILL");
+  else if (res.value === "capacity")       Logger.log("TRACKQUEUE enqueue-refused capacity=" + TRACKING_MAX_ENTRIES_ + " id=" + n + " NEEDS-BACKFILL");
+  else if (res.value === "persist-failed") Logger.log("TRACKQUEUE enqueue-not-persisted id=" + n + " NEEDS-BACKFILL");
+}
+
+/** Attempts one entry. Returns "done", "retry" or "ambiguous". Never throws. */
+function trackingApplyEntry_(sheet, entry) {
+  try {
+    var hits = sheet.getRange("B:B").createTextFinder(trackingIdText_(entry[0]))
+      .matchEntireCell(true).matchCase(true).findAll();
+    if (hits.length === 0) return "retry";
+    if (hits.length > 1) {
+      Logger.log("TRACKQUEUE ambiguous-id id=" + entry[0] + " hits=" + hits.length + " never-written");
+      return "ambiguous";
+    }
+    var cells = sheet.getRange(hits[0].getRow(), 46, 1, 5); // AT:AX
+    var current = cells.getValues()[0];
+    var wanted = [entry[1], entry[2], entry[3], entry[4], entry[5]];
+    var changed = false;
+    for (var i = 0; i < 5; i++) {
+      if (String(current[i]).trim() === "" && wanted[i]) { current[i] = wanted[i]; changed = true; }
+    }
+    if (changed) cells.setValues([current]);
+    syncFbAdsSourceType_(sheet, hits[0].getRow(), 1);
+    return "done";
+  } catch (e) { return "retry"; }
+}
+
+/** Retries every pending lead. Safe to call at the start and end of a run. */
+function flushTrackingQueue_() {
+  var sheet;
+  try {
+    sheet = SpreadsheetApp.openById("1fiqGa4nRkSkun-nffI_QVtFQG4o4ubJGXkMIcEprI1k").getSheetByName("Leads Data");
+    if (!sheet) return;
+  } catch (e) { return; }
+
+  // --- phase 1: snapshot under lock, mutate nothing -----------------------
+  var snap = trackingWithLock_(function () { return trackingReadKey_(TRACKING_QUEUE_KEY_); });
+  if (!snap.ok || !snap.value.ok) { Logger.log("TRACKQUEUE flush-skipped state-unknown-or-locked"); return; }
+  var batch = snap.value.queue;
+  if (!batch.length) return;
+
+  // --- phase 2: slow Sheet work, NO lock held -----------------------------
+  var written = {}, ambiguousIds = {}, triedFailed = {}, done = 0;
+  for (var i = 0; i < batch.length; i++) {
+    var e = batch[i];
+    try {
+      var r = trackingApplyEntry_(sheet, e);
+      if (r === "done") { written[e[0]] = 1; done++; }
+      else if (r === "ambiguous") { ambiguousIds[e[0]] = 1; }
+      else { triedFailed[e[0]] = 1; }
+    } catch (err) { /* skip this lead only */ }
+  }
+
+  // --- phase 3: reconcile against a FRESH read ----------------------------
+  var nowSec = trackingNowSec_();
+  var rec = trackingWithLock_(function () {
+    var cur = trackingReadKey_(TRACKING_QUEUE_KEY_);
+    if (!cur.ok) return { aborted: true };
+    var keep = [], recover = [], seen = {};
+    for (var j = 0; j < cur.queue.length; j++) {
+      var c = cur.queue[j], id = c[0];
+      if (seen[id]) continue;
+      seen[id] = 1;
+      if (written[id]) continue;                                   // resolved: drop
+      if (ambiguousIds[id]) { recover.push(c.concat(["ambiguous"])); continue; }
+      if (nowSec - c[7] > TRACKING_TTL_SECONDS_) { recover.push(c.concat(["expired"])); continue; }
+      if (triedFailed[id]) {
+        c[6] = c[6] + 1;
+        if (c[6] >= TRACKING_MAX_ATTEMPTS_) { recover.push(c.concat(["exhausted"])); continue; }
+      }
+      keep.push(c);                                                // concurrent adds survive
+    }
+    // Recovery first: an interruption then duplicates, never loses.
+    var moved = recover.length ? trackingRecoveryAdd_(recover) : true;
+    if (!moved) {
+      for (var k = 0; k < recover.length; k++) keep.push(recover[k].slice(0, 8));
+      recover = [];
+    }
+    var stored = trackingPersistKey_(TRACKING_QUEUE_KEY_, keep);
+    return { aborted: false, kept: keep.length, moved: moved ? recover.length : 0, stored: stored };
+  });
+
+  if (!rec.ok || rec.value.aborted) {
+    Logger.log("TRACKQUEUE reconcile-skipped written=" + done +
+      " queue-unchanged-entries-retried-next-run");
+    return;
+  }
+  Logger.log("TRACKQUEUE flush written=" + done + " pending=" + rec.value.kept +
+    " moved-to-recovery=" + rec.value.moved + " queuePersisted=" + rec.value.stored +
+    (rec.value.stored ? "" : " REMOVALS-NOT-COMMITTED-will-retry"));
+}
+
 /**
  * Writes Source Type, Channel, Funnel, Conversion Method and Landing Page (AT:AX)
  * on the row the backend just created, found by exact Lead Unique ID in column B.
@@ -1505,14 +2024,59 @@ function trackingAdChannel_(campaign, source) {
  * fields: { at, au, av, aw, ax } - omitted or empty values are left untouched.
  */
 function writeTrackingFields_(apiResult, fields) {
+  // --- TRACKDIAG (temporary, observation only) -------------------------------
+  // Local helpers so nothing is added to the script's global surface. Each one
+  // is self-contained and cannot throw: a failure degrades to a placeholder.
+  var diagKeys = function (obj) {
+    try {
+      if (obj === null || typeof obj !== "object") return "(not-object)";
+      var keys = Object.keys(obj);
+      if (!keys.length) return "(empty)";
+      var out = [];
+      for (var k = 0; k < keys.length && out.length < 15; k++) {
+        // Emit a key name only when it is a plain identifier. Anything else is
+        // withheld, so no value-like or free-text key can reach the log.
+        out.push(/^[A-Za-z0-9_]{1,40}$/.test(String(keys[k])) ? String(keys[k]) : "(withheld)");
+      }
+      return out.sort().join("|") + (keys.length > 15 ? "|+" + (keys.length - 15) + "more" : "");
+    } catch (e) { return "(keys-unavailable)"; }
+  };
+  var diagErrCategory = function (e) {
+    try {
+      var text = String((e && (e.message || e.name)) || "");
+      var rules = [
+        ["quota", /quota|exceeded maximum|too many|rate/i],
+        ["permission", /permission|authoriz|access denied|not allowed/i],
+        ["timeout", /timed? ?out|deadline/i],
+        ["range", /range|out of bounds|does not exist/i],
+        ["parse", /json|unexpected token|parse/i],
+        ["service", /service|internal error|unavailable|try again/i]
+      ];
+      for (var r = 0; r < rules.length; r++) if (rules[r][1].test(text)) return rules[r][0];
+      var name = String((e && e.name) || "");
+      return /^(TypeError|RangeError|ReferenceError|SyntaxError)$/.test(name) ? name : "other";
+    } catch (e2) { return "uncategorised"; }
+  };
+  var diagLog = function (line) { try { Logger.log(line); } catch (e) { /* never affect flow */ } };
+  // --- end TRACKDIAG helpers -------------------------------------------------
+
   try {
     var data = typeof apiResult === "string" ? JSON.parse(apiResult) : apiResult;
     var leadId = String((data && (data.leadUniqueId || (data.lead && data.lead.leadUniqueId))) || "").trim();
-    if (!leadId) return;
+    if (!leadId) {
+      diagLog("TRACKDIAG A no-lead-id resultType=" + (typeof apiResult) +
+        " topKeys=" + diagKeys(data) +
+        " leadKeys=" + diagKeys(data && data.lead));
+      return;
+    }
     var sheet = SpreadsheetApp.openById("1fiqGa4nRkSkun-nffI_QVtFQG4o4ubJGXkMIcEprI1k").getSheetByName("Leads Data");
     var hits = sheet.getRange("B:B").createTextFinder(leadId).matchEntireCell(true).matchCase(true).findAll();
     if (hits.length !== 1) {
-      Logger.log("Tracking not written for " + leadId + ": " + hits.length + " matching rows");
+      if (hits.length === 0) trackingEnqueue_(leadId, fields);
+      diagLog("TRACKDIAG B lookup hits=" + hits.length +
+        " idShape=" + (/^Lead ID - \d+$/.test(leadId) ? "canonical" : "non-canonical") +
+        " idLen=" + leadId.length +
+        " sheetLastRow=" + sheet.getLastRow());
       return;
     }
     var cells = sheet.getRange(hits[0].getRow(), 46, 1, 5); // AT:AX
@@ -1523,14 +2087,25 @@ function writeTrackingFields_(apiResult, fields) {
       if (String(current[i]).trim() === "" && wanted[i]) { current[i] = wanted[i]; changed = true; }
     }
     if (changed) cells.setValues([current]);
+    if (!changed) {
+      // Row matched but nothing was written - the only remaining silent failure.
+      // Counts only; no cell contents and no Lead ID are logged.
+      var filled = 0, asked = 0;
+      for (var c = 0; c < 5; c++) {
+        if (String(current[c]).trim() !== "") filled++;
+        if (wanted[c]) asked++;
+      }
+      diagLog("TRACKDIAG C row-found-no-write alreadyFilled=" + filled + " wantedNonEmpty=" + asked);
+    }
     syncFbAdsSourceType_(sheet, hits[0].getRow(), 1);
   } catch (err) {
-    Logger.log("Tracking write failed: " + err);
+    diagLog("TRACKDIAG D exception category=" + diagErrCategory(err));
   }
 }
 
 function addNewLeadDataFormSheets() {
   ensureLeadsDataHeaders();
+  flushTrackingQueue_();
   syncFbAdsSourceType_();
 
   let leadData = {}
@@ -1805,6 +2380,7 @@ function addNewLeadDataFormSheets() {
 
   // assignLeads(); // Auto-assignment is now handled directly by Firebase upon lead creation!
 
+  flushTrackingQueue_();
   syncIncomingNumberSourceType_();
   syncFbAdsSourceType_();
 }
